@@ -3,7 +3,7 @@ import { basename } from 'node:path';
 import { existsSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
-import { abrirBanco, encerrarBanco, migrar } from '../db.js';
+import { abrirBanco, dirBancoApp, dirBancoProjeto, encerrarBanco, migrar } from '../db.js';
 import { inserirQuestoes, type QuestaoSeed } from '../seed.js';
 import { parseProva } from './parser.js';
 import { parseGabarito } from './gabarito.js';
@@ -52,7 +52,11 @@ Opções:
   --ano        Ano da prova
   --materia    Matéria usada quando a seção não for detectada
   --id         Prefixo dos ids gerados             (padrão: slug do nome)
+  --banco      Onde gravar: "app" (padrão) ou "projeto"
   --sim        Grava sem pedir confirmação
+
+O padrão grava no banco do app desktop. Feche o app antes de importar: o
+banco embutido aceita um processo por vez.
 `;
 
 async function main() {
@@ -88,6 +92,19 @@ async function main() {
       process.exitCode = 1;
       return;
     }
+  }
+
+  // Sem isto, o import cairia no banco de desenvolvimento e as questões
+  // simplesmente não apareceriam no app.
+  if (!process.env.DATABASE_URL && !process.env.ESTUDOS_DATA_DIR) {
+    const destino = (args.banco as string) ?? 'app';
+    if (destino !== 'app' && destino !== 'projeto') {
+      console.error('--banco aceita apenas "app" ou "projeto".');
+      process.exitCode = 1;
+      return;
+    }
+    process.env.ESTUDOS_DATA_DIR =
+      destino === 'app' ? dirBancoApp() : dirBancoProjeto();
   }
 
   const nomeProva =
@@ -175,8 +192,22 @@ async function main() {
     }
   }
 
-  await abrirBanco();
-  await migrar();
+  try {
+    await abrirBanco();
+    await migrar();
+  } catch (erro) {
+    const msg = erro instanceof Error ? erro.message : String(erro);
+    if (/lock|LOCK|in use|resource busy/i.test(msg)) {
+      console.error(
+        '\nO banco está em uso. Feche o app Estudos e rode de novo — ' +
+          'o banco embutido aceita um processo por vez.',
+      );
+      process.exitCode = 1;
+      return;
+    }
+    throw erro;
+  }
+
   const inseridas = await inserirQuestoes(registros);
   await encerrarBanco();
 

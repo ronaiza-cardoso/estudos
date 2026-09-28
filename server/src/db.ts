@@ -1,4 +1,5 @@
 import { mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { migrations } from './migrations.js';
@@ -23,9 +24,29 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export const URL_BANCO = process.env.DATABASE_URL ?? null;
 
-/** Onde o PGlite guarda os dados quando não há Postgres externo. */
-export const DIR_DADOS =
-  process.env.ESTUDOS_DATA_DIR ?? resolve(here, '../../data/pglite');
+/** Banco do app desktop — é onde ficam os dados que você usa de verdade. */
+export function dirBancoApp(): string {
+  const base =
+    process.platform === 'darwin'
+      ? resolve(homedir(), 'Library/Application Support/estudos')
+      : process.platform === 'win32'
+        ? resolve(process.env.APPDATA ?? homedir(), 'estudos')
+        : resolve(process.env.XDG_CONFIG_HOME ?? resolve(homedir(), '.config'), 'estudos');
+  return resolve(base, 'pglite');
+}
+
+/** Banco de desenvolvimento, dentro do projeto. */
+export function dirBancoProjeto(): string {
+  return resolve(here, '../../data/pglite');
+}
+
+/**
+ * Lido na hora de abrir, não na carga do módulo: assim o CLI consegue
+ * escolher o banco antes de conectar.
+ */
+function dirDados(): string {
+  return process.env.ESTUDOS_DATA_DIR ?? dirBancoProjeto();
+}
 
 export const CONFIG_PADRAO: Record<string, string> = {
   foco_min: '25',
@@ -139,7 +160,7 @@ let driver: Driver | null = null;
 
 export async function abrirBanco(): Promise<Driver> {
   if (driver) return driver;
-  driver = URL_BANCO ? await driverServidor(URL_BANCO) : await driverEmbutido(DIR_DADOS);
+  driver = URL_BANCO ? await driverServidor(URL_BANCO) : await driverEmbutido(dirDados());
   await driver.pronto();
   console.log(driver.descricao);
   return driver;
