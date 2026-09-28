@@ -1,0 +1,808 @@
+/* ==========================================================================
+   Layout do app — usa apenas os tokens de tokens.css
+   ========================================================================== */
+
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- topo ---------- */
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--cor-fundo);
+  border-bottom: var(--borda);
+}
+
+.topo-interno {
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  padding: 0 var(--esp-4);
+  height: var(--altura-topo);
+  display: flex;
+  align-items: center;
+  gap: var(--esp-5);
+}
+
+.marca {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-2);
+  font-size: var(--texto-g);
+  font-weight: var(--peso-black);
+  letter-spacing: var(--entreletras-titulo);
+}
+
+.marca-ponto {
+  width: 10px;
+  height: 10px;
+  background: var(--cor-acento);
+  align-self: center;
+}
+
+.abas {
+  display: flex;
+  margin-left: auto;
+}
+
+.aba {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  height: var(--altura-topo);
+  padding: 0 var(--esp-4);
+  border: none;
+  background: transparent;
+  color: var(--cor-texto);
+  font-family: var(--fonte);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.aba:hover { background: var(--cor-superficie-alt); }
+
+.aba-ativa,
+.aba-ativa:hover {
+  background: var(--cor-acento);
+  color: #fff;
+}
+
+/* ---------- conteúdo ---------- */
+
+.conteudo {
+  flex: 1;
+  width: 100%;
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  padding: var(--esp-5) var(--esp-4) var(--esp-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.conteudo-com-barra { padding-bottom: calc(var(--altura-barra) + var(--esp-7)); }
+
+.secao-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+
+.coluna { display: flex; flex-direction: column; gap: var(--esp-3); }
+
+.vazio {
+  padding: var(--esp-6) var(--esp-4);
+  text-align: center;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-p);
+}
+
+/* ==========================================================================
+   Pomodoro — a tela é só o contador
+   ========================================================================== */
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-5);
+  min-height: calc(100vh - var(--altura-topo) - var(--esp-7));
+  padding: var(--esp-7) var(--esp-4);
+  text-align: center;
+}
+
+.relogio-fase {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.relogio-tempo {
+  font-size: clamp(5rem, 20vw, 12rem);
+  font-weight: var(--peso-black);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.045em;
+  line-height: 0.85;
+}
+
+.relogio-pausa { color: var(--cor-acento-texto); }
+
+.relogio-barra {
+  width: min(520px, 100%);
+  height: 10px;
+  border: var(--borda);
+  background: var(--cor-superficie);
+}
+
+.relogio-barra-preenchida {
+  height: 100%;
+  background: var(--cor-acento);
+  transition: width 250ms linear;
+}
+
+.timer-acoes {
+  display: flex;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ciclos { display: flex; gap: var(--esp-2); }
+
+.ciclo {
+  width: 18px;
+  height: 18px;
+  border: var(--borda);
+  background: var(--cor-superficie);
+}
+
+.ciclo-cheio { background: var(--cor-acento); border-color: var(--cor-acento); }
+
+/* ==========================================================================
+   Métricas e heatmap
+   ========================================================================== */
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--esp-5);
+}
+
+.metrica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+}
+
+.metrica-valor {
+  font-size: 2.25rem;
+  font-weight: var(--peso-black);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/* ---------- heatmap ---------- */
+
+.heatmap { position: relative; }
+
+.heatmap-rolagem {
+  overflow-x: auto;
+  padding-bottom: var(--esp-1);
+}
+
+.heatmap-interno { display: inline-block; min-width: 100%; }
+
+.heatmap-meses {
+  display: grid;
+  grid-template-columns: repeat(53, 13px);
+  gap: 3px;
+  margin-left: 32px;
+  margin-bottom: var(--esp-1);
+}
+
+.heatmap-meses span {
+  justify-self: start;
+  white-space: nowrap;
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.heatmap-corpo { display: flex; gap: var(--esp-2); }
+
+.heatmap-dias {
+  display: grid;
+  grid-template-rows: repeat(7, 13px);
+  gap: 3px;
+  width: 24px;
+}
+
+.heatmap-dias span {
+  font-size: var(--texto-ppp);
+  line-height: 13px;
+  color: var(--cor-texto-suave);
+}
+
+.heatmap-grade { display: flex; gap: 3px; }
+
+.heatmap-coluna {
+  display: grid;
+  grid-template-rows: repeat(7, 13px);
+  gap: 3px;
+}
+
+.heatmap-celula {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: none;
+  background: var(--cor-superficie-alt);
+  cursor: pointer;
+}
+
+.heatmap-celula:hover { outline: 1px solid var(--cor-texto); }
+
+/* Cinco níveis: vazio e quatro tons do acento, por tempo estudado. */
+.heatmap-n0 { background: #eceaea; }
+.heatmap-n1 { background: #fbd6d0; }
+.heatmap-n2 { background: #f7a295; }
+.heatmap-n3 { background: #f26e5a; }
+.heatmap-n4 { background: #ec3013; }
+
+.heatmap-hoje { box-shadow: inset 0 0 0 1.5px var(--cor-texto); }
+
+.heatmap-selecionada {
+  outline: 2px solid var(--cor-texto);
+  outline-offset: 1px;
+}
+
+.heatmap-vazia { visibility: hidden; cursor: default; }
+
+.heatmap-legenda {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+  margin-top: var(--esp-2);
+}
+
+.heatmap-escala {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.heatmap-escala .heatmap-celula { cursor: default; }
+.heatmap-escala .rotulo { margin: 0 var(--esp-1); }
+
+.heatmap-dica {
+  position: fixed;
+  z-index: 60;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: var(--esp-1) var(--esp-2);
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-medio);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---------- detalhe do dia ---------- */
+
+.detalhe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  padding-top: var(--esp-4);
+  border-top: var(--borda-suave);
+}
+
+.detalhe-cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+}
+
+.detalhe-cabecalho h3 { font-size: var(--texto-g); }
+
+.detalhe-total {
+  font-size: var(--texto-p);
+  font-weight: var(--peso-forte);
+  color: var(--cor-texto-suave);
+}
+
+.detalhe-colunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--esp-5);
+  align-items: start;
+}
+
+.detalhe-colunas section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  font-size: var(--texto-p);
+}
+
+.lista li {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.lista-hora {
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-suave);
+  min-width: 42px;
+}
+
+.lista-nome { flex: 1; min-width: 0; }
+
+.lista-acao { margin-left: auto; }
+
+/* ==========================================================================
+   Cartão de questão
+   ========================================================================== */
+
+.questao { border: var(--borda-suave); background: var(--cor-superficie); }
+
+.questao-faixa {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: var(--borda-suave);
+  background: var(--cor-superficie-alt);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+}
+
+.questao-numero {
+  display: grid;
+  place-content: center;
+  min-width: 30px;
+  height: 24px;
+  padding: 0 var(--esp-1);
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+  font-variant-numeric: tabular-nums;
+}
+
+.questao-id { color: var(--cor-texto-fraco); font-weight: var(--peso-medio); }
+.questao-trilha { color: var(--cor-texto-suave); }
+
+.questao-selecionar {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-left: auto;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.questao-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-4);
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: var(--borda-suave);
+  font-size: var(--texto-pp);
+  color: var(--cor-texto-suave);
+}
+
+.questao-meta b {
+  color: var(--cor-texto);
+  font-weight: var(--peso-forte);
+}
+
+.questao-texto-assoc { border-bottom: var(--borda-suave); }
+
+.questao-texto-assoc-botao {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  width: 100%;
+  padding: var(--esp-2) var(--esp-3);
+  border: none;
+  background: transparent;
+  font-family: var(--fonte);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.questao-texto-assoc-botao:hover { background: var(--cor-superficie-alt); }
+
+.questao-texto-assoc-corpo {
+  padding: var(--esp-3);
+  border-top: var(--borda-suave);
+  background: var(--cor-superficie-alt);
+  font-size: var(--texto-p);
+  white-space: pre-wrap;
+}
+
+.questao-enunciado {
+  padding: var(--esp-4) var(--esp-3);
+  font-size: var(--texto-m);
+  white-space: pre-wrap;
+}
+
+.alternativas { border-top: var(--borda-suave); }
+
+.alternativa {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  width: 100%;
+  padding: var(--esp-3);
+  border: none;
+  border-bottom: var(--borda-suave);
+  background: transparent;
+  font-family: var(--fonte);
+  font-size: var(--texto-p);
+  line-height: 1.5;
+  text-align: left;
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.alternativa:last-child { border-bottom: none; }
+.alternativa:hover:not(:disabled) { background: var(--cor-superficie-alt); }
+.alternativa:disabled { cursor: default; }
+
+.alternativa-letra {
+  display: grid;
+  place-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: var(--borda);
+  font-size: var(--texto-pp);
+  font-weight: var(--peso-black);
+}
+
+.alternativa-marcada .alternativa-letra {
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+}
+
+.alternativa-certa {
+  background: var(--cor-positivo-fraco);
+  border-left: var(--traco) solid var(--cor-positivo);
+}
+.alternativa-certa .alternativa-letra {
+  background: var(--cor-positivo);
+  border-color: var(--cor-positivo);
+  color: #fff;
+}
+
+.alternativa-errada {
+  background: var(--cor-acento-fraco);
+  border-left: var(--traco) solid var(--cor-acento);
+}
+.alternativa-errada .alternativa-letra {
+  background: var(--cor-acento);
+  border-color: var(--cor-acento);
+  color: #fff;
+}
+
+.questao-acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+  border-top: var(--borda-suave);
+  flex-wrap: wrap;
+}
+
+.questao-rodape {
+  display: flex;
+  align-items: center;
+  border-top: var(--borda-suave);
+  flex-wrap: wrap;
+}
+
+.questao-rodape-item {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  border: none;
+  border-right: var(--borda-suave);
+  background: transparent;
+  font-family: var(--fonte);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.questao-rodape-item:hover { background: var(--cor-superficie-alt); }
+.questao-rodape-item-ativo { background: var(--cor-texto); color: var(--cor-fundo); }
+.questao-rodape-item-ativo:hover { background: var(--cor-texto); color: var(--cor-fundo); }
+.questao-rodape-perigo { color: var(--cor-acento-texto); margin-left: auto; border-right: none; }
+.questao-rodape-perigo:hover { background: var(--cor-acento); color: #fff; }
+
+.questao-gaveta {
+  padding: var(--esp-3);
+  border-top: var(--borda-suave);
+  background: var(--cor-superficie-alt);
+}
+
+.historico-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  margin-top: var(--esp-3);
+  font-size: var(--texto-pp);
+  font-variant-numeric: tabular-nums;
+}
+
+.historico-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-1) 0;
+  border-bottom: var(--borda-suave);
+}
+
+/* ==========================================================================
+   Filtros e barra de prova
+   ========================================================================== */
+
+.filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--esp-4);
+}
+
+@media (max-width: 760px) { .filtros { grid-template-columns: 1fr; } }
+
+.filtros > * { min-width: 0; }
+
+.barra-prova {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--cor-acento);
+  border-top: var(--borda);
+  color: #fff;
+}
+
+.barra-prova-interno {
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  padding: var(--esp-2) var(--esp-4);
+  min-height: var(--altura-barra);
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  flex-wrap: wrap;
+}
+
+.barra-prova input[type='text'] {
+  flex: 1;
+  min-width: 200px;
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--traco) solid #fff;
+  background: var(--cor-acento);
+  color: #fff;
+  font-family: var(--fonte);
+  font-size: var(--texto-p);
+}
+
+.barra-prova input[type='text']::placeholder { color: rgba(255, 255, 255, 0.7); }
+
+.barra-prova .botao {
+  background: #fff;
+  border-color: #fff;
+  color: var(--cor-acento-texto);
+}
+.barra-prova .botao:hover:not(:disabled) {
+  background: var(--cor-texto);
+  border-color: var(--cor-texto);
+  color: #fff;
+}
+
+.barra-prova-contador {
+  font-weight: var(--peso-black);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Resolver prova
+   ========================================================================== */
+
+.prova-topo {
+  position: sticky;
+  top: var(--altura-topo);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+  flex-wrap: wrap;
+}
+
+.prova-cronometro {
+  font-size: var(--texto-g);
+  font-weight: var(--peso-black);
+  font-variant-numeric: tabular-nums;
+}
+
+.prova-topo .botao {
+  background: transparent;
+  border-color: var(--cor-fundo);
+  color: var(--cor-fundo);
+  margin-left: auto;
+}
+.prova-topo .botao:hover:not(:disabled) {
+  background: var(--cor-acento);
+  border-color: var(--cor-acento);
+  color: #fff;
+}
+
+.resultado {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--esp-5);
+}
+
+@media (max-width: 560px) { .resultado { grid-template-columns: 1fr; } }
+
+.resultado > * { min-width: 0; }
+
+/* ==========================================================================
+   Configurações
+   ========================================================================== */
+
+.config-grupo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--esp-3);
+}
+
+.passos {
+  margin: 0;
+  padding-left: var(--esp-5);
+  font-size: var(--texto-p);
+  line-height: 1.7;
+}
+
+.passos code {
+  padding: 1px 4px;
+  border: var(--borda-suave);
+  background: var(--cor-superficie-alt);
+  font-size: var(--texto-pp);
+}
+
+/* ==========================================================================
+   Modo foco — o ciclo em andamento ocupa a tela inteira
+   ========================================================================== */
+
+/* O Pomodoro fica sempre no DOM; quem troca é só a visibilidade. */
+.aba-visivel { display: contents; }
+.aba-oculta { display: none; }
+
+.app-foco .conteudo {
+  max-width: none;
+  padding: 0;
+  gap: 0;
+}
+
+.app-foco .timer {
+  width: 100%;
+  min-height: 100vh;
+  justify-content: center;
+  gap: var(--esp-6);
+}
+
+/* Na tela cheia o contador cresce o quanto der. */
+.app-foco .relogio-tempo {
+  font-size: clamp(6rem, 26vw, 20rem);
+}
+
+.app-foco .relogio-barra { max-width: min(760px, 70vw); }
+
+/* ==========================================================================
+   Despertador — ocupa a tela quando o ciclo acaba
+   ========================================================================== */
+
+.despertador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-4);
+  min-height: calc(100vh - var(--altura-topo) - var(--esp-7));
+  padding: var(--esp-7) var(--esp-4);
+  text-align: center;
+  background: var(--cor-acento);
+  color: #fff;
+  animation: pulso-despertador 1.1s ease-in-out infinite;
+}
+
+.app-foco .despertador { min-height: 100vh; }
+
+.despertador-icone { animation: tremor 0.9s ease-in-out infinite; }
+
+.despertador-titulo {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  letter-spacing: -0.03em;
+}
+
+.despertador-texto { font-size: var(--texto-g); font-weight: var(--peso-medio); }
+
+.despertador .botao {
+  margin-top: var(--esp-4);
+  background: #fff;
+  border-color: #fff;
+  color: var(--cor-acento-texto);
+}
+
+.despertador .botao:hover {
+  background: var(--cor-texto);
+  border-color: var(--cor-texto);
+  color: #fff;
+}
+
+@keyframes pulso-despertador {
+  0%, 100% { background: var(--cor-acento); }
+  50%      { background: var(--cor-acento-texto); }
+}
+
+@keyframes tremor {
+  0%, 100% { transform: rotate(-9deg); }
+  50%      { transform: rotate(9deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .despertador, .despertador-icone { animation: none; }
+}

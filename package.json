@@ -1,0 +1,66 @@
+{
+  "name": "estudos",
+  "private": true,
+  "version": "1.0.0",
+  "description": "App local de tracking de estudos",
+  "type": "module",
+  "main": "electron/main.mjs",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c magenta,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build --workspace server && npm run build --workspace web",
+    "import": "npm run import --workspace server --",
+    "test": "npm run test --workspace server",
+    "seed:demo": "npm run seed:demo --workspace server --",
+    "desktop": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --mac"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@fastify/cors": "^10.0.1",
+    "@fastify/static": "^8.0.3",
+    "fastify": "^5.2.0",
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.estudos.app",
+    "productName": "Estudos",
+    "directories": {
+      "output": "release"
+    },
+    "asar": false,
+    "files": [
+      "electron/**",
+      "server/dist/**",
+      "server/package.json",
+      "web/dist/**",
+      "seed-questoes.js",
+      "package.json",
+      "node_modules/**",
+      "!node_modules/**/{test,__tests__,tests,example,examples,docs}/**",
+      "!**/*.map"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    }
+  }
+}

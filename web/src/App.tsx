@@ -1,0 +1,181 @@
+import { useCallback, useEffect, useState } from 'react';
+import {
+  BarChart3,
+  FileText,
+  ListChecks,
+  Settings,
+  Timer,
+  X,
+} from 'lucide-react';
+import { api, type Config, type Estatisticas, type Materia } from './lib/api';
+import { plural } from './lib/format';
+import { Pomodoro } from './pages/Pomodoro';
+import { Sessoes } from './pages/Sessoes';
+import { Questoes } from './pages/Questoes';
+import { Provas } from './pages/Provas';
+import { Configuracoes } from './pages/Configuracoes';
+
+type Aba = 'pomodoro' | 'sessoes' | 'questoes' | 'provas' | 'config';
+
+const ABAS: { id: Aba; nome: string; icone: typeof Timer }[] = [
+  { id: 'pomodoro', nome: 'Pomodoro', icone: Timer },
+  { id: 'sessoes', nome: 'Sessões', icone: BarChart3 },
+  { id: 'questoes', nome: 'Questões', icone: ListChecks },
+  { id: 'provas', nome: 'Provas', icone: FileText },
+  { id: 'config', nome: 'Config', icone: Settings },
+];
+
+export function App() {
+  const [aba, setAba] = useState<Aba>('pomodoro');
+  const [materias, setMaterias] = useState<Materia[]>([]);
+  const [config, setConfig] = useState<Config | null>(null);
+  const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+  const [nomeProva, setNomeProva] = useState('');
+  const [erro, setErro] = useState('');
+  const [emFoco, setEmFoco] = useState(false);
+
+  const carregarMaterias = useCallback(() => {
+    api.materias().then(setMaterias).catch((e) => setErro((e as Error).message));
+  }, []);
+
+  const carregarSessoes = useCallback(() => {
+    api.estatisticas().then(setEstatisticas).catch((e) => setErro((e as Error).message));
+  }, []);
+
+  useEffect(() => {
+    carregarMaterias();
+    carregarSessoes();
+    api.config().then(setConfig).catch((e) => setErro((e as Error).message));
+  }, [carregarMaterias, carregarSessoes]);
+
+  // Responder questões e resolver provas mexem nas estatísticas, então elas
+  // são recarregadas sempre que a aba de sessões volta a ficar visível.
+  useEffect(() => {
+    if (aba === 'sessoes') carregarSessoes();
+  }, [aba, carregarSessoes]);
+
+  const alternarSelecao = useCallback((id: string, marcada: boolean) => {
+    setSelecionadas((atual) => {
+      const novo = new Set(atual);
+      if (marcada) novo.add(id);
+      else novo.delete(id);
+      return novo;
+    });
+  }, []);
+
+  async function gerarProva() {
+    const nome = nomeProva.trim() || `Prova de ${new Date().toLocaleDateString('pt-BR')}`;
+    try {
+      await api.criarProva(nome, [...selecionadas]);
+      setSelecionadas(new Set());
+      setNomeProva('');
+      setAba('provas');
+    } catch (e) {
+      setErro((e as Error).message);
+    }
+  }
+
+  if (!config) {
+    return (
+      <div className="app">
+        <div className="vazio">{erro || 'Conectando ao servidor…'}</div>
+      </div>
+    );
+  }
+
+  const mostraBarra = selecionadas.size > 0 && aba === 'questoes';
+
+  return (
+    <div className={`app ${emFoco ? 'app-foco' : ''}`}>
+      {!emFoco && (
+        <header className="topo">
+          <div className="topo-interno">
+            <div className="marca">
+              <span className="marca-ponto" />
+              Estudos
+            </div>
+
+            <nav className="abas">
+              {ABAS.map(({ id, nome, icone: Icone }) => (
+                <button
+                  key={id}
+                  className={`aba ${aba === id ? 'aba-ativa' : ''}`}
+                  onClick={() => setAba(id)}
+                >
+                  <Icone size={15} />
+                  {nome}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </header>
+      )}
+
+      <main className={`conteudo ${mostraBarra ? 'conteudo-com-barra' : ''}`}>
+        {!emFoco && erro && (
+          <div className="aviso aviso-erro linha" style={{ justifyContent: 'space-between' }}>
+            {erro}
+            <button className="botao botao-nu" onClick={() => setErro('')} aria-label="Fechar">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Sempre montado: desmontar o Pomodoro abortaria o ciclo em curso. */}
+        <div className={aba === 'pomodoro' || emFoco ? 'aba-visivel' : 'aba-oculta'}>
+          <Pomodoro
+            config={config}
+            aoSalvarSessao={carregarSessoes}
+            aoMudarFoco={setEmFoco}
+          />
+        </div>
+
+        {!emFoco && aba === 'sessoes' && (
+          <Sessoes estatisticas={estatisticas} aoAtualizar={carregarSessoes} />
+        )}
+
+        {!emFoco && aba === 'questoes' && (
+          <Questoes
+            materias={materias}
+            selecionadas={selecionadas}
+            aoSelecionar={alternarSelecao}
+            aoAtualizarMaterias={carregarMaterias}
+          />
+        )}
+
+        {!emFoco && aba === 'provas' && <Provas materias={materias} aoAtualizar={carregarSessoes} />}
+
+        {!emFoco && aba === 'config' && <Configuracoes config={config} aoSalvar={setConfig} />}
+      </main>
+
+      {/* Barra fixa: aparece assim que há questões marcadas no banco. */}
+      {!emFoco && mostraBarra && (
+        <div className="barra-prova">
+          <div className="barra-prova-interno">
+            <span className="barra-prova-contador">
+              {plural(selecionadas.size, 'questão selecionada', 'questões selecionadas')}
+            </span>
+            <input
+              type="text"
+              value={nomeProva}
+              onChange={(e) => setNomeProva(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && gerarProva()}
+              placeholder="Nome da prova"
+            />
+            <button className="botao" onClick={gerarProva}>
+              <FileText size={15} /> Gerar prova
+            </button>
+            <button
+              className="botao"
+              onClick={() => setSelecionadas(new Set())}
+              aria-label="Limpar seleção"
+            >
+              <X size={15} /> Limpar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

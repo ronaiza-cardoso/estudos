@@ -1,0 +1,460 @@
+/* ==========================================================================
+   Tokens do design system — espelham o protótipo Estudos.dc.html
+   Regras do sistema: acento único, zero border-radius, divisórias de 2px,
+   grade sempre visível, rótulo de botão alinhado à esquerda.
+   ========================================================================== */
+
+:root {
+  /* ---------- cor ---------- */
+  --cor-fundo:          #f3f2f2;
+  --cor-superficie:     #ffffff;
+  --cor-superficie-alt: #eceaea;
+  --cor-texto:          #201e1d;
+  --cor-texto-suave:    #6f6968;
+  --cor-texto-fraco:    #9a9492;
+
+  --cor-acento:         #ec3013;  /* preenchimentos e destaques */
+  --cor-acento-texto:   #ae1800;  /* texto em vermelho (contraste) */
+  --cor-acento-fraco:   #fbe3df;
+
+  --cor-borda:          #201e1d;
+  --cor-borda-suave:    #cdc9c7;
+
+  --cor-positivo:       #1b6b3a;
+  --cor-positivo-fraco: #dff0e4;
+
+  /* ---------- traço ---------- */
+  --traco:        2px;
+  --borda:        var(--traco) solid var(--cor-borda);
+  --borda-suave:  1px solid var(--cor-borda-suave);
+  --borda-acento: var(--traco) solid var(--cor-acento);
+
+  /* ---------- tipografia ---------- */
+  --fonte: 'Archivo', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+
+  --texto-xg:  2.75rem;
+  --texto-g:   1.5rem;
+  --texto-m:   1.0625rem;
+  --texto-p:   0.875rem;
+  --texto-pp:  0.75rem;
+  --texto-ppp: 0.6875rem;
+
+  --peso-normal:  400;
+  --peso-medio:   500;
+  --peso-forte:   600;
+  --peso-black:   800;
+
+  --entreletras-rotulo: 0.08em;
+  --entreletras-titulo: -0.01em;
+
+  /* ---------- espaço ---------- */
+  --esp-1:  4px;
+  --esp-2:  8px;
+  --esp-3:  12px;
+  --esp-4:  16px;
+  --esp-5:  24px;
+  --esp-6:  32px;
+  --esp-7:  48px;
+
+  /* ---------- layout ---------- */
+  --largura-max: 1180px;
+  --altura-topo: 64px;
+  --altura-barra: 60px;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0; /* o sistema não usa cantos arredondados */
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte);
+  font-size: var(--texto-m);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: var(--peso-black);
+  letter-spacing: var(--entreletras-titulo);
+  line-height: 1.15;
+}
+
+p { margin: 0; }
+
+a {
+  color: var(--cor-acento-texto);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+::selection {
+  background: var(--cor-acento);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: var(--traco) solid var(--cor-acento);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Utilitários de texto
+   ========================================================================== */
+
+.rotulo {
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.rotulo-acento { color: var(--cor-acento-texto); }
+
+.numero {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--peso-black);
+  letter-spacing: -0.02em;
+}
+
+.suave { color: var(--cor-texto-suave); }
+.fraco { color: var(--cor-texto-fraco); }
+.vermelho { color: var(--cor-acento-texto); }
+.positivo { color: var(--cor-positivo); }
+
+/* ==========================================================================
+   Grade visível — o fundo escuro aparece nas frestas de 2px
+   ========================================================================== */
+
+/* Sem fundo escuro nem bordas: a separação é o espaço em branco. */
+.grade {
+  display: grid;
+  gap: var(--esp-5);
+}
+
+.grade-2 { grid-template-columns: repeat(2, 1fr); }
+.grade-3 { grid-template-columns: repeat(3, 1fr); }
+.grade-4 { grid-template-columns: repeat(4, 1fr); }
+.grade-5 { grid-template-columns: repeat(5, 1fr); }
+
+@media (max-width: 900px) {
+  .grade-3, .grade-4, .grade-5 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .grade-2, .grade-3, .grade-4, .grade-5 { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   Painéis e divisórias
+   ========================================================================== */
+
+.painel { background: transparent; }
+
+.painel-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding-bottom: var(--esp-2);
+}
+
+.painel-corpo { padding: 0; }
+
+/* Seção comum: um título discreto e o conteúdo, sem moldura. */
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.secao > h2 {
+  font-size: var(--texto-p);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.divisor      { border-top: var(--borda); }
+.divisor-suave{ border-top: var(--borda-suave); }
+
+/* ==========================================================================
+   Botões — rótulo sempre à esquerda
+   ========================================================================== */
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start; /* alinhamento à esquerda é regra do sistema */
+  gap: var(--esp-2);
+  width: auto;
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-family: var(--fonte);
+  font-size: var(--texto-p);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: background 90ms linear, color 90ms linear;
+}
+
+.botao:hover:not(:disabled) {
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+}
+
+.botao:disabled {
+  color: var(--cor-texto-fraco);
+  border-color: var(--cor-borda-suave);
+  cursor: not-allowed;
+}
+
+.botao-primario {
+  background: var(--cor-acento);
+  border-color: var(--cor-acento);
+  color: #fff;
+}
+.botao-primario:hover:not(:disabled) {
+  background: var(--cor-texto);
+  border-color: var(--cor-texto);
+  color: #fff;
+}
+/* sem isto o botão primário continuaria vermelho mesmo desabilitado */
+.botao-primario:disabled {
+  background: var(--cor-superficie-alt);
+  border-color: var(--cor-borda-suave);
+  color: var(--cor-texto-fraco);
+}
+
+.botao-perigo { color: var(--cor-acento-texto); }
+.botao-perigo:hover:not(:disabled) {
+  background: var(--cor-acento);
+  border-color: var(--cor-acento);
+  color: #fff;
+}
+
+.botao-bloco { width: 100%; }
+.botao-g { padding: var(--esp-3) var(--esp-4); font-size: var(--texto-m); }
+.botao-p { padding: var(--esp-1) var(--esp-2); font-size: var(--texto-ppp); }
+
+.botao-nu {
+  border-color: transparent;
+  background: transparent;
+  padding: var(--esp-1) var(--esp-2);
+}
+.botao-nu:hover:not(:disabled) {
+  background: var(--cor-texto);
+  color: var(--cor-fundo);
+}
+
+/* ==========================================================================
+   Campos
+   ========================================================================== */
+
+.campo { display: flex; flex-direction: column; gap: var(--esp-1); }
+
+.campo > input,
+.campo > select,
+.campo > textarea,
+.entrada {
+  width: 100%;
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--borda);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font-family: var(--fonte);
+  font-size: var(--texto-p);
+  line-height: 1.45;
+}
+
+.campo > textarea, textarea.entrada {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.campo > select, select.entrada {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--cor-texto) 50%),
+                    linear-gradient(135deg, var(--cor-texto) 50%, transparent 50%);
+  background-position: right 16px center, right 11px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: var(--esp-6);
+}
+
+.campo > input::placeholder,
+.campo > textarea::placeholder,
+.entrada::placeholder { color: var(--cor-texto-fraco); }
+
+/* checkbox quadrado, sem arredondamento */
+input[type='checkbox'] {
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  border: var(--borda);
+  background: var(--cor-superficie);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  flex: 0 0 auto;
+}
+input[type='checkbox']:checked {
+  background: var(--cor-acento);
+  border-color: var(--cor-acento);
+}
+input[type='checkbox']:checked::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  margin-top: -2px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ==========================================================================
+   Tabelas
+   ========================================================================== */
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--texto-p);
+}
+
+.tabela th {
+  padding: var(--esp-2) var(--esp-3) var(--esp-2) 0;
+  border-bottom: var(--borda-suave);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+
+/* Sem linhas entre as linhas: o respiro vertical já separa. */
+.tabela td {
+  padding: var(--esp-3) var(--esp-3) var(--esp-3) 0;
+  vertical-align: middle;
+}
+.tabela .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ==========================================================================
+   Tags
+   ========================================================================== */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-1);
+  padding: 1px var(--esp-2);
+  border: var(--borda-suave);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+  white-space: nowrap;
+}
+
+.tag-acento {
+  border-color: var(--cor-acento);
+  color: var(--cor-acento-texto);
+  background: var(--cor-acento-fraco);
+}
+
+.tag-positivo {
+  border-color: var(--cor-positivo);
+  color: var(--cor-positivo);
+  background: var(--cor-positivo-fraco);
+}
+
+/* ==========================================================================
+   Modal
+   ========================================================================== */
+
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--esp-6) var(--esp-4);
+  background: rgba(32, 30, 29, 0.55);
+  overflow-y: auto;
+}
+
+.modal {
+  width: 100%;
+  max-width: 640px;
+  background: var(--cor-superficie);
+  border: var(--borda);
+}
+
+.modal-largo { max-width: 860px; }
+
+.modal-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  border-bottom: var(--borda);
+}
+
+.modal-corpo { padding: var(--esp-4); }
+
+.modal-rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  border-top: var(--borda);
+}
+
+/* ==========================================================================
+   Avisos
+   ========================================================================== */
+
+.aviso {
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--borda);
+  font-size: var(--texto-p);
+}
+
+.aviso-erro {
+  border-color: var(--cor-acento);
+  background: var(--cor-acento-fraco);
+  color: var(--cor-acento-texto);
+}
+
+.aviso-ok {
+  border-color: var(--cor-positivo);
+  background: var(--cor-positivo-fraco);
+  color: var(--cor-positivo);
+}
