@@ -1,236 +1,27 @@
 /**
- * Questões iniciais carregadas na primeira execução do app.
- * Substitua este arquivo pelo seu próprio seed — o formato é o abaixo.
- * Campos obrigatórios: id, materia, enunciado, alternativas, gabarito.
+ * Questões carregadas na primeira execução, quando o banco está vazio.
+ *
+ * Está vazio de propósito: o app começa sem nenhuma questão. Para popular,
+ * importe uma prova em PDF (`npm run import`) ou cadastre pela interface,
+ * em Questões → Cadastrar questão.
+ *
+ * Se quiser semear questões daqui, o formato de cada item é:
+ *
+ *   {
+ *     id: 'minha-001',                    // único
+ *     materia: 'Direito Constitucional',  // criada se não existir
+ *     assunto: 'Controle de Constitucionalidade',
+ *     ano: 2024,
+ *     banca: 'CEBRASPE',
+ *     orgao: 'TRF 1ª Região',
+ *     prova: 'Analista Judiciário',
+ *     texto_assoc: null,                  // texto-base, quando houver
+ *     enunciado: '...',
+ *     alternativas: { A: '...', B: '...', C: '...', D: '...', E: '...' },
+ *     gabarito: 'C',                      // null se anulada
+ *     anulada: false,
+ *   }
+ *
+ * Obrigatórios: id, materia, enunciado, alternativas, gabarito.
  */
-export default [
-  {
-    id: 'seed-dir-adm-001',
-    materia: 'Direito Administrativo',
-    assunto: 'Princípios da Administração Pública',
-    ano: 2023,
-    banca: 'CEBRASPE',
-    orgao: 'TRF 1ª Região',
-    prova: 'Analista Judiciário — Área Administrativa',
-    enunciado:
-      'Os princípios expressos no caput do art. 37 da Constituição Federal que regem a Administração Pública direta e indireta de qualquer dos Poderes da União, dos Estados, do Distrito Federal e dos Municípios são:',
-    alternativas: {
-      A: 'legalidade, impessoalidade, moralidade, publicidade e eficiência.',
-      B: 'legalidade, isonomia, moralidade, publicidade e economicidade.',
-      C: 'legalidade, impessoalidade, razoabilidade, publicidade e eficiência.',
-      D: 'supremacia do interesse público, legalidade, moralidade e publicidade.',
-      E: 'legalidade, impessoalidade, moralidade, motivação e proporcionalidade.',
-    },
-    gabarito: 'A',
-  },
-  {
-    id: 'seed-dir-adm-002',
-    materia: 'Direito Administrativo',
-    assunto: 'Atos Administrativos',
-    ano: 2022,
-    banca: 'FGV',
-    orgao: 'TJ-RO',
-    prova: 'Analista Judiciário',
-    enunciado:
-      'A revogação do ato administrativo, diferentemente da anulação, tem como fundamento:',
-    alternativas: {
-      A: 'a ilegalidade do ato, com efeitos retroativos à data de sua edição.',
-      B: 'a conveniência e a oportunidade, com efeitos a partir da revogação.',
-      C: 'o vício de competência, sanável por convalidação.',
-      D: 'a ausência de motivação, com efeitos retroativos.',
-      E: 'o desvio de finalidade, reconhecido apenas pelo Poder Judiciário.',
-    },
-    gabarito: 'B',
-  },
-  {
-    id: 'seed-dir-const-001',
-    materia: 'Direito Constitucional',
-    assunto: 'Direitos e Garantias Fundamentais',
-    ano: 2023,
-    banca: 'FCC',
-    orgao: 'TRT 2ª Região',
-    prova: 'Técnico Judiciário',
-    enunciado:
-      'Em relação ao mandado de segurança, previsto no art. 5º, LXIX, da Constituição Federal, é correto afirmar que:',
-    alternativas: {
-      A: 'só pode ser impetrado por pessoa física brasileira nata.',
-      B: 'protege direito líquido e certo não amparado por habeas corpus ou habeas data.',
-      C: 'substitui a ação de habeas data quando houver dado sigiloso.',
-      D: 'exige o esgotamento prévio da via administrativa.',
-      E: 'não admite a modalidade coletiva em nosso ordenamento.',
-    },
-    gabarito: 'B',
-  },
-  {
-    id: 'seed-dir-const-002',
-    materia: 'Direito Constitucional',
-    assunto: 'Organização do Estado',
-    ano: 2021,
-    banca: 'CEBRASPE',
-    orgao: 'PGE-PE',
-    prova: 'Analista Administrativo',
-    enunciado:
-      'Compete privativamente à União legislar sobre, entre outras matérias:',
-    alternativas: {
-      A: 'proteção do patrimônio histórico e cultural.',
-      B: 'direito civil, comercial, penal, processual, eleitoral e do trabalho.',
-      C: 'proteção do meio ambiente e combate à poluição.',
-      D: 'educação, cultura, ensino e desporto.',
-      E: 'previdência social e proteção à infância.',
-    },
-    gabarito: 'B',
-  },
-  {
-    id: 'seed-port-001',
-    materia: 'Língua Portuguesa',
-    assunto: 'Interpretação de Texto',
-    ano: 2023,
-    banca: 'FGV',
-    orgao: 'SEFAZ-MG',
-    prova: 'Auditor Fiscal',
-    texto_assoc:
-      'A pressa é inimiga da precisão. Em um mundo que premia respostas imediatas, a capacidade de suspender o julgamento até que os dados estejam completos tornou-se uma competência rara — e, por isso mesmo, valiosa. Quem decide rápido acerta às vezes; quem decide bem acerta com constância.',
-    enunciado:
-      'Considerando o texto acima, a oposição construída pelo autor no último período se dá entre:',
-    alternativas: {
-      A: 'rapidez e lentidão, com valorização explícita da segunda.',
-      B: 'acerto eventual e acerto constante, associados respectivamente à pressa e à ponderação.',
-      C: 'dados completos e dados incompletos, sem juízo de valor.',
-      D: 'competência rara e competência comum, em sentido irônico.',
-      E: 'julgamento e preconceito, tomados como sinônimos.',
-    },
-    gabarito: 'B',
-  },
-  {
-    id: 'seed-port-002',
-    materia: 'Língua Portuguesa',
-    assunto: 'Concordância Verbal',
-    ano: 2022,
-    banca: 'FCC',
-    orgao: 'TRE-SP',
-    prova: 'Analista Judiciário',
-    enunciado: 'Assinale a alternativa em que a concordância verbal está correta.',
-    alternativas: {
-      A: 'Fazem dois anos que o edital foi publicado.',
-      B: 'Houveram muitos candidatos aprovados naquele certame.',
-      C: 'Existem razões suficientes para a anulação da questão.',
-      D: 'Deve haverem novas vagas no próximo concurso.',
-      E: 'Tratam-se de matérias distintas e independentes.',
-    },
-    gabarito: 'C',
-  },
-  {
-    id: 'seed-rlm-001',
-    materia: 'Raciocínio Lógico',
-    assunto: 'Lógica Proposicional',
-    ano: 2023,
-    banca: 'CEBRASPE',
-    orgao: 'Polícia Federal',
-    prova: 'Agente Administrativo',
-    enunciado:
-      'A negação da proposição "Se estudo, então sou aprovado" é logicamente equivalente a:',
-    alternativas: {
-      A: 'Se não estudo, então não sou aprovado.',
-      B: 'Estudo e não sou aprovado.',
-      C: 'Não estudo ou sou aprovado.',
-      D: 'Se sou aprovado, então estudo.',
-      E: 'Não estudo e não sou aprovado.',
-    },
-    gabarito: 'B',
-  },
-  {
-    id: 'seed-rlm-002',
-    materia: 'Raciocínio Lógico',
-    assunto: 'Análise Combinatória',
-    ano: 2021,
-    banca: 'VUNESP',
-    orgao: 'Prefeitura de Campinas',
-    prova: 'Assistente Administrativo',
-    enunciado:
-      'De quantas maneiras distintas 5 livros diferentes podem ser dispostos lado a lado em uma prateleira?',
-    alternativas: {
-      A: '25',
-      B: '60',
-      C: '100',
-      D: '120',
-      E: '720',
-    },
-    gabarito: 'D',
-  },
-  {
-    id: 'seed-info-001',
-    materia: 'Informática',
-    assunto: 'Segurança da Informação',
-    ano: 2023,
-    banca: 'FGV',
-    orgao: 'TJ-DFT',
-    prova: 'Técnico Judiciário',
-    enunciado:
-      'O princípio da segurança da informação que garante que os dados não foram alterados de forma não autorizada é a:',
-    alternativas: {
-      A: 'confidencialidade.',
-      B: 'integridade.',
-      C: 'disponibilidade.',
-      D: 'autenticidade.',
-      E: 'irretratabilidade.',
-    },
-    gabarito: 'B',
-  },
-  {
-    id: 'seed-info-002',
-    materia: 'Informática',
-    assunto: 'Redes de Computadores',
-    ano: 2022,
-    banca: 'CEBRASPE',
-    orgao: 'MPU',
-    prova: 'Técnico Administrativo',
-    enunciado:
-      'No modelo TCP/IP, o protocolo responsável pela entrega confiável e ordenada de dados entre aplicações é o:',
-    alternativas: {
-      A: 'IP.',
-      B: 'UDP.',
-      C: 'TCP.',
-      D: 'ICMP.',
-      E: 'ARP.',
-    },
-    gabarito: 'C',
-  },
-  {
-    id: 'seed-leg-001',
-    materia: 'Legislação Administrativa',
-    assunto: 'Lei nº 8.112/1990',
-    ano: 2022,
-    banca: 'CEBRASPE',
-    orgao: 'INSS',
-    prova: 'Técnico do Seguro Social',
-    enunciado:
-      'De acordo com a Lei nº 8.112/1990, o prazo do estágio probatório do servidor nomeado para cargo de provimento efetivo é de:',
-    alternativas: {
-      A: '12 meses.',
-      B: '24 meses.',
-      C: '36 meses.',
-      D: '48 meses.',
-      E: '60 meses.',
-    },
-    gabarito: 'C',
-  },
-  {
-    id: 'seed-leg-002',
-    materia: 'Legislação Administrativa',
-    assunto: 'Lei nº 14.133/2021',
-    ano: 2023,
-    banca: 'FGV',
-    orgao: 'Câmara dos Deputados',
-    prova: 'Analista Legislativo',
-    enunciado:
-      'A nova Lei de Licitações e Contratos Administrativos (Lei nº 14.133/2021) prevê como modalidade de licitação destinada à contratação de bens e serviços comuns o:',
-    alternativas: {
-      A: 'convite.',
-      B: 'pregão.',
-      C: 'tomada de preços.',
-      D: 'leilão.',
-      E: 'diálogo competitivo.',
-    },
-    gabarito: 'B',
-  },
-];
+export default [];
