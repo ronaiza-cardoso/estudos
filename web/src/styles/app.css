@@ -806,3 +806,54 @@
 @media (prefers-reduced-motion: reduce) {
   .despertador, .despertador-icone { animation: none; }
 }
+
+/* ==========================================================================
+   Login — tela cheia, antes de o app existir
+   ========================================================================== */
+
+.login {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--esp-6) var(--esp-4);
+  background: var(--cor-fundo);
+}
+
+.login-caixa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  width: 100%;
+  max-width: 400px;
+  padding: var(--esp-6);
+  border: var(--borda);
+  background: var(--cor-superficie);
+}
+
+.login-marca { justify-content: flex-start; }
+
+.login-titulo { font-size: var(--texto-g); }
+
+/* Encosta no título: os dois são um bloco só. */
+.login-texto {
+  margin-top: calc(var(--esp-3) * -1);
+  font-size: var(--texto-p);
+}
+
+.login-dica {
+  font-size: var(--texto-pp);
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  .login-caixa { padding: var(--esp-5) var(--esp-4); }
+}
+
+/* Sair fica ao lado das abas, mas discreto: não é navegação. */
+.aba-sair {
+  color: var(--cor-texto-suave);
+  padding-right: 0;
+}
+
+.aba-sair:hover { color: var(--cor-acento-texto); }

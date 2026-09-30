@@ -5,6 +5,7 @@ import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import { abrirBanco, encerrarBanco, garantirConfig, migrar } from './db.js';
+import { limparSessoesVencidas, loginAtivo } from './auth.js';
 import { popularSeed } from './seed.js';
 import { rotasMaterias } from './routes/materias.js';
 import { rotasSessoes } from './routes/sessoes.js';
@@ -13,6 +14,7 @@ import { rotasQuestoes } from './routes/questoes.js';
 import { rotasProvas } from './routes/provas.js';
 import { rotasConfig } from './routes/config.js';
 import { rotasBackup } from './routes/backup.js';
+import { registrarAutenticacao } from './routes/auth.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const PORTA = Number(process.env.PORT ?? 5183);
@@ -26,11 +28,24 @@ await garantirConfig();
 const inseridas = await popularSeed();
 if (inseridas > 0) console.log(`seed-questoes.js: ${inseridas} questões carregadas.`);
 
+if (loginAtivo()) {
+  const vencidas = await limparSessoesVencidas();
+  console.log(`Login ativo${vencidas > 0 ? ` (${vencidas} sessões vencidas removidas)` : ''}.`);
+} else {
+  console.log('Login desativado (banco embutido). Use ESTUDOS_LOGIN=1 para exigir senha.');
+}
+
 const app = Fastify({ logger: false, bodyLimit: 32 * 1024 * 1024 });
 
+// Sem `credentials: true` de propósito: o cookie de sessão é SameSite=Lax e
+// nunca deve viajar para outra origem. Nos três modos o front é servido da
+// mesma origem da API (no dev, via proxy do Vite).
 await app.register(cors, { origin: true });
 
 app.get('/api/saude', async () => ({ ok: true }));
+
+// Antes das rotas do app: o hook precisa valer para todas elas.
+await registrarAutenticacao(app);
 
 rotasMaterias(app);
 rotasSessoes(app);

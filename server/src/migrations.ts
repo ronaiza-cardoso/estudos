@@ -85,4 +85,32 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    id: 2,
+    name: 'login',
+    sql: `
+      -- Uma conta só: o login é uma tranca no app, não um sistema
+      -- multiusuário. Ainda assim é uma tabela, e não uma chave em "config",
+      -- porque garantirConfig() apaga toda chave fora de CONFIG_PADRAO — o
+      -- hash da senha morreria no primeiro boot.
+      CREATE TABLE usuarios (
+        id         SERIAL PRIMARY KEY,
+        login      TEXT NOT NULL,
+        senha_hash TEXT NOT NULL,
+        criado_em  TEXT NOT NULL
+      );
+      -- Mesma convenção das matérias: unicidade sem diferenciar maiúsculas.
+      CREATE UNIQUE INDEX idx_usuarios_login_lower ON usuarios (lower(login));
+
+      -- O token guardado no cookie. Sessão no banco em vez de token assinado:
+      -- assim "Sair" invalida de verdade, sem precisar de segredo em disco.
+      CREATE TABLE sessoes_login (
+        token      TEXT PRIMARY KEY,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        criada_em  TEXT NOT NULL,
+        expira_em  TEXT NOT NULL
+      );
+      CREATE INDEX idx_sessoes_login_expira ON sessoes_login (expira_em);
+    `,
+  },
 ];

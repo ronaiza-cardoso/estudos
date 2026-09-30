@@ -3,12 +3,21 @@ import {
   BarChart3,
   FileText,
   ListChecks,
+  LogOut,
   Settings,
   Timer,
   X,
 } from 'lucide-react';
-import { api, type Config, type Estatisticas, type Materia } from './lib/api';
+import {
+  api,
+  observarSessao,
+  type Config,
+  type EstadoLogin,
+  type Estatisticas,
+  type Materia,
+} from './lib/api';
 import { plural } from './lib/format';
+import { Login } from './pages/Login';
 import { Pomodoro } from './pages/Pomodoro';
 import { Sessoes } from './pages/Sessoes';
 import { Questoes } from './pages/Questoes';
@@ -27,6 +36,9 @@ const ABAS: { id: Aba; nome: string; icone: typeof Timer }[] = [
 
 export function App() {
   const [aba, setAba] = useState<Aba>('pomodoro');
+  // null enquanto não sabemos se há login: nada é carregado antes disso.
+  const [sessao, setSessao] = useState<EstadoLogin | null>(null);
+  const [avisoSessao, setAvisoSessao] = useState('');
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
@@ -43,11 +55,39 @@ export function App() {
     api.estatisticas().then(setEstatisticas).catch((e) => setErro((e as Error).message));
   }, []);
 
+  // Primeiro passo sempre: descobrir se o login está ligado e se já entramos.
   useEffect(() => {
+    api.sessao()
+      .then(setSessao)
+      .catch((e) => setErro((e as Error).message));
+  }, []);
+
+  /**
+   * Qualquer 401 vindo de qualquer chamada cai aqui — inclusive no meio do uso,
+   * se a sessão vencer. Descartamos o `config` para que os dados sejam
+   * recarregados do zero no próximo login.
+   */
+  useEffect(() => {
+    observarSessao(() => {
+      setSessao((atual) =>
+        atual ? { ...atual, autenticado: false, usuario: null } : atual,
+      );
+      setConfig(null);
+      setAvisoSessao('Sua sessão expirou. Entre novamente.');
+    });
+    return () => observarSessao(null);
+  }, []);
+
+  const autenticado = sessao ? !sessao.login_ativo || sessao.autenticado : false;
+
+  // Os dados do app só são buscados depois de autenticado: antes disso a API
+  // responderia 401 e a tela de login ficaria coberta de erros.
+  useEffect(() => {
+    if (!autenticado) return;
     carregarMaterias();
     carregarSessoes();
     api.config().then(setConfig).catch((e) => setErro((e as Error).message));
-  }, [carregarMaterias, carregarSessoes]);
+  }, [autenticado, carregarMaterias, carregarSessoes]);
 
   // Responder questões e resolver provas mexem nas estatísticas, então elas
   // são recarregadas sempre que a aba de sessões volta a ficar visível.
@@ -64,6 +104,19 @@ export function App() {
     });
   }, []);
 
+  async function sair() {
+    try {
+      await api.logout();
+    } catch {
+      // Se o logout falhar, o cookie pode continuar de pé no servidor; ainda
+      // assim voltamos para a tela de login, que é o que o usuário pediu.
+    }
+    setConfig(null);
+    setErro('');
+    setAvisoSessao('');
+    setSessao(await api.sessao());
+  }
+
   async function gerarProva() {
     const nome = nomeProva.trim() || `Prova de ${new Date().toLocaleDateString('pt-BR')}`;
     try {
@@ -76,10 +129,32 @@ export function App() {
     }
   }
 
-  if (!config) {
+  if (!sessao) {
     return (
       <div className="app">
         <div className="vazio">{erro || 'Conectando ao servidor…'}</div>
+      </div>
+    );
+  }
+
+  if (sessao.login_ativo && !sessao.autenticado) {
+    return (
+      <Login
+        configurado={sessao.configurado}
+        avisoInicial={avisoSessao}
+        aoEntrar={(novo) => {
+          setAvisoSessao('');
+          setErro('');
+          setSessao(novo);
+        }}
+      />
+    );
+  }
+
+  if (!config) {
+    return (
+      <div className="app">
+        <div className="vazio">{erro || 'Carregando…'}</div>
       </div>
     );
   }
@@ -108,6 +183,18 @@ export function App() {
                 </button>
               ))}
             </nav>
+
+            {/* Só existe quando o login está ligado — no desktop não aparece. */}
+            {sessao.login_ativo && (
+              <button
+                className="aba aba-sair"
+                onClick={sair}
+                title={sessao.usuario ? `Sair de ${sessao.usuario.login}` : 'Sair'}
+              >
+                <LogOut size={15} />
+                Sair
+              </button>
+            )}
           </div>
         </header>
       )}
@@ -146,7 +233,13 @@ export function App() {
 
         {!emFoco && aba === 'provas' && <Provas materias={materias} aoAtualizar={carregarSessoes} />}
 
-        {!emFoco && aba === 'config' && <Configuracoes config={config} aoSalvar={setConfig} />}
+        {!emFoco && aba === 'config' && (
+          <Configuracoes
+            config={config}
+            aoSalvar={setConfig}
+            login={{ ativo: sessao.login_ativo, sessoes: sessao.sessoes }}
+          />
+        )}
       </main>
 
       {/* Barra fixa: aparece assim que há questões marcadas no banco. */}

@@ -2,11 +2,29 @@
 
 export class ErroApi extends Error {}
 
+/** 401: a sessão caiu (ou nunca existiu). O App volta para a tela de login. */
+export class ErroAutenticacao extends ErroApi {}
+
+/**
+ * Rotas em que um 401 é resposta esperada, e não sessão perdida: errar a senha
+ * na tela de login não pode disparar o "sua sessão expirou".
+ */
+const ROTAS_LOGIN = ['/api/login', '/api/senha', '/api/primeiro-acesso'];
+
+let aoPerderSessao: (() => void) | null = null;
+
+/** O App registra aqui o que fazer quando qualquer chamada devolver 401. */
+export function observarSessao(fn: (() => void) | null) {
+  aoPerderSessao = fn;
+}
+
 async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   let resposta: Response;
   try {
     resposta = await fetch(url, {
       ...init,
+      // O cookie de sessão é HttpOnly e mora na mesma origem da API.
+      credentials: 'same-origin',
       headers: init?.body ? { 'content-type': 'application/json' } : undefined,
     });
   } catch {
@@ -17,7 +35,12 @@ async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   const corpo = texto ? JSON.parse(texto) : null;
 
   if (!resposta.ok) {
-    throw new ErroApi(corpo?.erro ?? `Falha na requisição (${resposta.status}).`);
+    const mensagem = corpo?.erro ?? `Falha na requisição (${resposta.status}).`;
+    if (resposta.status === 401 && !ROTAS_LOGIN.includes(url.split('?')[0])) {
+      aoPerderSessao?.();
+      throw new ErroAutenticacao(mensagem);
+    }
+    throw new ErroApi(mensagem);
   }
   return corpo as T;
 }
@@ -141,9 +164,32 @@ export type DetalheDia = {
 
 export type Config = Record<string, string>;
 
+export type EstadoLogin = {
+  /** Falso no app desktop: lá o login é transparente. */
+  login_ativo: boolean;
+  /** Já existe conta? Falso só no primeiro acesso. */
+  configurado: boolean;
+  autenticado: boolean;
+  usuario: { id: number; login: string } | null;
+  /** Quantas sessões ativas — mostrado na tela de config. */
+  sessoes?: number;
+};
+
 /* ------------------------------ rotas ------------------------------ */
 
 export const api = {
+  sessao: () => get<EstadoLogin>('/api/sessao'),
+  login: (login: string, senha: string) =>
+    post<{ ok: true; usuario: { id: number; login: string } }>('/api/login', { login, senha }),
+  primeiroAcesso: (login: string, senha: string) =>
+    post<{ ok: true; usuario: { id: number; login: string } }>('/api/primeiro-acesso', {
+      login,
+      senha,
+    }),
+  logout: () => post<{ ok: true }>('/api/logout'),
+  trocarSenha: (senha_atual: string, senha_nova: string) =>
+    put<{ ok: true }>('/api/senha', { senha_atual, senha_nova }),
+
   materias: () => get<Materia[]>('/api/materias'),
   criarMateria: (nome: string) => post<{ id: number; nome: string }>('/api/materias', { nome }),
   removerMateria: (id: number) => remover<{ ok: true }>(`/api/materias/${id}`),

@@ -2,10 +2,16 @@ import { useRef, useState } from 'react';
 import { Download, Save, Upload } from 'lucide-react';
 import { api, type Config } from '../lib/api';
 import { Campo, Aviso } from '../components/Campo';
+import { TrocarSenha } from './Login';
 
-type Props = { config: Config; aoSalvar: (novo: Config) => void };
+type Props = {
+  config: Config;
+  aoSalvar: (novo: Config) => void;
+  /** Ausente ou inativo no app desktop, onde não há senha. */
+  login?: { ativo: boolean; sessoes?: number };
+};
 
-export function Configuracoes({ config, aoSalvar }: Props) {
+export function Configuracoes({ config, aoSalvar, login }: Props) {
   const [rascunho, setRascunho] = useState<Config>(config);
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
@@ -128,6 +134,9 @@ export function Configuracoes({ config, aoSalvar }: Props) {
           </div>
         </div>
       </section>
+
+      {/* ---------------- acesso ---------------- */}
+      {login?.ativo && <TrocarSenha sessoes={login.sessoes} />}
 
       {/* ---------------- backup ---------------- */}
       <section className="painel">

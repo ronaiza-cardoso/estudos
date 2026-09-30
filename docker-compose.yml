@@ -25,6 +25,12 @@ services:
       # As datas são gravadas no horário local do container — sem isto,
       # estudar depois das 21h cairia no dia seguinte.
       TZ: ${TZ:-America/Sao_Paulo}
+      # Exige login. É também o padrão quando há DATABASE_URL, mas fica
+      # explícito aqui para ser fácil de achar e de desligar com 0.
+      ESTUDOS_LOGIN: ${ESTUDOS_LOGIN:-1}
+      # Só ligue com HTTPS na frente: em HTTP puro o navegador descarta um
+      # cookie Secure e o login entra em laço.
+      COOKIE_SEGURO: ${COOKIE_SEGURO:-0}
     depends_on:
       db:
         condition: service_healthy
