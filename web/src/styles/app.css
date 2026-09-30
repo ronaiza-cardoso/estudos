@@ -44,6 +44,39 @@
   align-self: center;
 }
 
+/* Carimbo da licença: discreto o bastante para não competir com a marca,
+   permanente o bastante para aparecer em qualquer captura de tela. */
+.carimbo {
+  padding: 2px var(--esp-2);
+  border: var(--borda-suave);
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-medio);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Some antes das abas em tela estreita — a versão completa continua em Config. */
+@media (max-width: 860px) {
+  .carimbo { display: none; }
+}
+
+.licenca {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border: var(--borda-suave);
+  font-size: var(--texto-p);
+}
+
+.licenca-selo {
+  flex: none;
+  margin-top: 2px;
+  color: var(--cor-positivo);
+}
+
 .abas {
   display: flex;
   margin-left: auto;

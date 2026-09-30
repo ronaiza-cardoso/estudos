@@ -256,10 +256,102 @@ em `uploads/`** e verifica numeração sem buracos, ausência de resíduo de
 cabeçalho, seções que não se sobrepõem e ao menos 90% das questões com
 alternativas reconhecidas. Com a pasta vazia esses testes são pulados.
 
+`server/test/pacote.test.ts` cobre o formato de venda: a serialização
+determinística (sem ela, a mesma licença geraria bytes diferentes e toda
+assinatura falharia), e as recusas que importam — licença trocada, questão
+inserida, chave errada, arquivo que é backup e não pacote.
+
 `server/test/auth.test.ts` cobre o login: hash e conferência de senha, recusa de
 hash malformado, quando o login liga sozinho, a trava de força bruta e — num
 PGlite temporário, que também exercita a migration — o cadastro da conta única,
 a validade e o vencimento das sessões e a troca de senha.
+
+---
+
+## Pacotes de questões
+
+Um pacote é um arquivo `.estudos` com um banco de questões pronto, **assinado** e
+**nominal**. É o formato de venda: o comprador baixa o app, importa o arquivo em
+**Config → Pacotes de questões** e as questões entram no banco dele.
+
+Duas defesas, e vale ser claro sobre o alcance de cada uma:
+
+- **Licença nominal.** O arquivo carrega nome e e-mail de quem comprou, e o app
+  mostra isso no topo, em qualquer aba. Não impede cópia — nada impede — mas faz
+  repassar o arquivo custar o próprio nome.
+- **Assinatura Ed25519.** Cobre a licença *e* as questões. Sem ela bastaria abrir
+  o JSON e apagar o nome. O app recusa qualquer arquivo alterado ou assinado com
+  outra chave.
+
+O que isso **não** é: controle de acesso. Depois de importadas, as questões ficam
+no banco do comprador para sempre. Quem tiver o arquivo e a paciência de mexer no
+código do app consegue usá-lo. A proposta é encarecer o compartilhamento casual,
+não torná-lo impossível.
+
+### Gerar o par de chaves (uma vez)
+
+```bash
+npm run pacote:chaves
+```
+
+Grava a **pública** em `server/src/chave-publica.ts` (commite: é ela que vai
+compilada no app) e a **privada** em `~/.estudos/chave-privada.pem`, modo 600.
+
+A privada nunca entra no git — `*.pem` está no `.gitignore`. Faça backup dela
+em outro lugar:
+
+- **perder a privada** = não conseguir emitir pacotes novos;
+- **trocar a privada** = invalidar todos os pacotes já vendidos.
+
+Enquanto a pública estiver vazia, o app recusa qualquer pacote.
+
+### Emitir
+
+```bash
+npm run pacote -- --titulo "Banco INSS 2026" --banca Cebraspe --para "Fulano" --email fulano@exemplo.com
+```
+
+Para várias vendas de uma vez, um CSV `nome,email` por linha (com ou sem
+cabeçalho):
+
+```bash
+npm run pacote -- --titulo "Banco INSS 2026" --banca Cebraspe --lote clientes.csv --saida ./pacotes
+```
+
+Cada comprador recebe um arquivo próprio, com licença de `id` distinto — dois
+arquivos do mesmo banco nunca são idênticos.
+
+| Opção       | Descrição                                                    |
+| ----------- | ------------------------------------------------------------ |
+| `--titulo`  | Nome comercial do banco (obrigatório)                        |
+| `--para`    | Nome do comprador (obrigatório, ou `--lote`)                  |
+| `--email`   | E-mail do comprador (obrigatório, ou `--lote`)                |
+| `--lote`    | CSV `nome,email`: emite um arquivo por linha                  |
+| `--banca`   | Filtra por banca (parcial, sem diferenciar maiúsculas)        |
+| `--orgao`   | Filtra por órgão                                              |
+| `--prova`   | Filtra pelo nome da prova                                     |
+| `--ano`     | Filtra por ano                                                |
+| `--tudo`    | Todas as questões — sem filtro nenhum o comando recusa        |
+| `--saida`   | Pasta de destino (padrão: `./pacotes`)                        |
+| `--privada` | Chave privada (padrão: `~/.estudos/chave-privada.pem`)        |
+| `--banco`   | De qual banco ler: `app` (padrão) ou `projeto`                |
+
+Questões cadastradas à mão (`custom`) **nunca** entram num pacote: só as
+importadas de prova.
+
+### Importar (o lado do comprador)
+
+**Config → Pacotes de questões → Importar pacote**. As questões são sempre
+**somadas** às que já existem; nada é apagado.
+
+Isso é de propósito, e é o motivo de o pacote não usar o Importar backup: o
+backup tem modo *substituir*, que dá `TRUNCATE` em tudo — o histórico de estudo
+de quem acabou de pagar iria junto. A rota do pacote toca só `materias` e
+`questoes`.
+
+Reimportar o mesmo arquivo não duplica nada e avisa que já tinha entrado. As
+questões chegam como `custom = false`, então o comprador não as apaga sem
+querer.
 
 ---
 
@@ -290,10 +382,13 @@ estudos/
 │   │   ├── db.ts           pool do Postgres, migrations e configuração
 │   │   ├── migrations.ts   schema versionado
 │   │   ├── auth.ts         senha (scrypt), sessões e trava de força bruta
+│   │   ├── pacote.ts       formato .estudos: licença e assinatura Ed25519
+│   │   ├── chave-publica.ts  chave que confere os pacotes (gerada)
+│   │   ├── pacote-cli.ts   gera as chaves e emite os pacotes de venda
 │   │   ├── routes/         materias, sessoes, questoes, provas, config,
-│   │   │                   backup, auth (login + guarda das rotas)
+│   │   │                   backup, pacote, auth (login + guarda das rotas)
 │   │   └── import/         parser de PDF, gabarito e CLI
-│   └── test/               testes do parser e do login + fixtures
+│   └── test/               testes do parser, do login e do pacote + fixtures
 └── web/
     └── src/
         ├── styles/tokens.css   tokens do design system
@@ -317,10 +412,16 @@ config(chave, valor)
 
 usuarios(id, login, senha_hash, criado_em)
 sessoes_login(token, usuario_id, criada_em, expira_em)
+
+licencas(id, banco, para, email, emitido_em, importado_em, questoes)
 ```
 
 `usuarios` tem no máximo uma linha. O hash não fica em `config` porque
 `garantirConfig()` apaga toda chave fora do padrão — ele morreria no boot.
+`licencas` é tabela pelo mesmo motivo.
+
+`licencas` é só carimbo: as questões do pacote já estão em `questoes`, e apagar
+a linha não as remove.
 
 `sessoes` não guarda matéria — o pomodoro é só o contador. As estatísticas por
 matéria são de questões (respondidas e % de acerto).

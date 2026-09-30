@@ -10,7 +10,8 @@
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "import": "tsx src/import/cli.ts",
     "test": "vitest run",
-    "seed:demo": "tsx src/seed-demo.ts"
+    "seed:demo": "tsx src/seed-demo.ts",
+    "pacote": "tsx src/pacote-cli.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

@@ -14,6 +14,7 @@ import { rotasQuestoes } from './routes/questoes.js';
 import { rotasProvas } from './routes/provas.js';
 import { rotasConfig } from './routes/config.js';
 import { rotasBackup } from './routes/backup.js';
+import { rotasPacote } from './routes/pacote.js';
 import { registrarAutenticacao } from './routes/auth.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -54,6 +55,7 @@ rotasQuestoes(app);
 rotasProvas(app);
 rotasConfig(app);
 rotasBackup(app);
+rotasPacote(app);
 
 // Em produção (Docker) o próprio Fastify serve o front já compilado.
 // Em desenvolvimento quem serve é o Vite, então a pasta não existe.

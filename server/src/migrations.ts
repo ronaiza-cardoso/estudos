@@ -113,4 +113,26 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_sessoes_login_expira ON sessoes_login (expira_em);
     `,
   },
+  {
+    id: 3,
+    name: 'licencas',
+    sql: `
+      -- Carimbo dos pacotes de questões comprados. Fica em tabela, e não em
+      -- "config", pelo mesmo motivo do hash da senha: garantirConfig() apaga
+      -- toda chave fora de CONFIG_PADRAO.
+      --
+      -- Não é controle de acesso: as questões já entraram no banco e continuam
+      -- lá. É o carimbo que o app exibe — quem compartilhar o arquivo
+      -- compartilha o próprio nome junto.
+      CREATE TABLE licencas (
+        id           TEXT PRIMARY KEY,
+        banco        TEXT NOT NULL,
+        para         TEXT NOT NULL,
+        email        TEXT NOT NULL,
+        emitido_em   TEXT NOT NULL,
+        importado_em TEXT NOT NULL,
+        questoes     INTEGER NOT NULL
+      );
+    `,
+  },
 ];

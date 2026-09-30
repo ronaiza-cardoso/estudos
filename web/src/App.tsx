@@ -14,6 +14,7 @@ import {
   type Config,
   type EstadoLogin,
   type Estatisticas,
+  type Licenca,
   type Materia,
 } from './lib/api';
 import { plural } from './lib/format';
@@ -46,6 +47,7 @@ export function App() {
   const [nomeProva, setNomeProva] = useState('');
   const [erro, setErro] = useState('');
   const [emFoco, setEmFoco] = useState(false);
+  const [licencas, setLicencas] = useState<Licenca[]>([]);
 
   const carregarMaterias = useCallback(() => {
     api.materias().then(setMaterias).catch((e) => setErro((e as Error).message));
@@ -87,6 +89,8 @@ export function App() {
     carregarMaterias();
     carregarSessoes();
     api.config().then(setConfig).catch((e) => setErro((e as Error).message));
+    // O carimbo das licenças é enfeite: falhar aqui não pode derrubar o app.
+    api.licencas().then(setLicencas).catch(() => setLicencas([]));
   }, [autenticado, carregarMaterias, carregarSessoes]);
 
   // Responder questões e resolver provas mexem nas estatísticas, então elas
@@ -170,6 +174,16 @@ export function App() {
               <span className="marca-ponto" />
               Estudos
             </div>
+
+            {/*
+              Carimbo do pacote comprado. Fica no topo, visível em qualquer
+              aba: é o que faz repassar o arquivo custar o próprio nome.
+            */}
+            {licencas.length > 0 && (
+              <span className="carimbo" title={licencas.map((l) => l.banco).join(' · ')}>
+                Licenciado para {licencas[0].para}
+              </span>
+            )}
 
             <nav className="abas">
               {ABAS.map(({ id, nome, icone: Icone }) => (

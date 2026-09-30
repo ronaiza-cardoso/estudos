@@ -6,3 +6,8 @@ data/
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# Chave privada que assina os pacotes de questões. Vazou, acabou.
+*.pem
+# Pacotes emitidos: levam nome e e-mail de compradores.
+pacotes/

@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
-import { Download, Save, Upload } from 'lucide-react';
-import { api, type Config } from '../lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { BadgeCheck, Download, Package, Save, Upload } from 'lucide-react';
+import { api, type Config, type Licenca } from '../lib/api';
 import { Campo, Aviso } from '../components/Campo';
 import { TrocarSenha } from './Login';
 
@@ -16,7 +16,16 @@ export function Configuracoes({ config, aoSalvar, login }: Props) {
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [licencas, setLicencas] = useState<Licenca[]>([]);
   const arquivo = useRef<HTMLInputElement>(null);
+  const pacote = useRef<HTMLInputElement>(null);
+
+  const recarregarLicencas = () =>
+    api.licencas().then(setLicencas).catch(() => setLicencas([]));
+
+  useEffect(() => {
+    recarregarLicencas();
+  }, []);
 
   const mudar = (chave: string, valor: string) =>
     setRascunho((r) => ({ ...r, [chave]: valor }));
@@ -73,6 +82,29 @@ export function Configuracoes({ config, aoSalvar, login }: Props) {
       location.reload();
     } catch (e) {
       setErro(`Falha ao importar: ${(e as Error).message}`);
+    }
+  }
+
+  async function importarPacote(ev: React.ChangeEvent<HTMLInputElement>) {
+    const f = ev.target.files?.[0];
+    ev.target.value = '';
+    if (!f) return;
+
+    setErro('');
+    setAviso('');
+    try {
+      const r = await api.importarPacote(JSON.parse(await f.text()));
+      await recarregarLicencas();
+      setAviso(
+        r.repetido
+          ? `“${r.licenca.banco}” já tinha sido importado — nada foi duplicado.`
+          : `“${r.licenca.banco}” importado: ${r.inseridas} de ${r.total} questões` +
+            `${r.inseridas < r.total ? ' (o resto já estava no banco)' : ''}.`,
+      );
+      // As matérias novas só aparecem nos filtros depois de recarregar.
+      if (r.inseridas > 0) setTimeout(() => location.reload(), 1200);
+    } catch (e) {
+      setErro(`Não foi possível importar: ${(e as Error).message}`);
     }
   }
 
@@ -137,6 +169,56 @@ export function Configuracoes({ config, aoSalvar, login }: Props) {
 
       {/* ---------------- acesso ---------------- */}
       {login?.ativo && <TrocarSenha sessoes={login.sessoes} />}
+
+      {/* ---------------- pacotes ---------------- */}
+      <section className="painel">
+        <div className="painel-cabecalho">
+          <span className="rotulo">Pacotes de questões</span>
+        </div>
+        <div className="painel-corpo coluna">
+          <p className="suave" style={{ fontSize: 'var(--texto-p)' }}>
+            Um arquivo <code>.estudos</code> traz um banco de questões pronto. As questões são
+            somadas às que você já tem — seu histórico de estudo não é tocado.
+          </p>
+
+          {licencas.length > 0 && (
+            <div className="coluna" style={{ gap: 'var(--esp-2)' }}>
+              {licencas.map((l) => (
+                <div key={l.id} className="licenca">
+                  <BadgeCheck size={16} className="licenca-selo" />
+                  <div className="coluna" style={{ gap: 2 }}>
+                    <strong>{l.banco}</strong>
+                    <span className="suave" style={{ fontSize: 'var(--texto-pp)' }}>
+                      Licenciado para {l.para} · {l.email}
+                    </span>
+                    <span className="suave" style={{ fontSize: 'var(--texto-pp)' }}>
+                      {l.questoes} questões · importado em{' '}
+                      {new Date(l.importado_em).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              <p className="suave" style={{ fontSize: 'var(--texto-pp)' }}>
+                A licença é nominal: o arquivo que você recebeu carrega seu nome e seu e-mail, e
+                o app os exibe. Repassá-lo repassa junto a sua identificação.
+              </p>
+            </div>
+          )}
+
+          <div className="linha">
+            <button className="botao" onClick={() => pacote.current?.click()}>
+              <Package size={15} /> Importar pacote
+            </button>
+            <input
+              ref={pacote}
+              type="file"
+              accept=".estudos,application/json"
+              hidden
+              onChange={importarPacote}
+            />
+          </div>
+        </div>
+      </section>
 
       {/* ---------------- backup ---------------- */}
       <section className="painel">

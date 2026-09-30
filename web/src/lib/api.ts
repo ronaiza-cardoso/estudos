@@ -164,6 +164,17 @@ export type DetalheDia = {
 
 export type Config = Record<string, string>;
 
+/** Carimbo de um pacote de questões comprado. */
+export type Licenca = {
+  id: string;
+  banco: string;
+  para: string;
+  email: string;
+  emitido_em: string;
+  importado_em: string;
+  questoes: number;
+};
+
 export type EstadoLogin = {
   /** Falso no app desktop: lá o login é transparente. */
   login_ativo: boolean;
@@ -247,4 +258,14 @@ export const api = {
       ...(conteudo as object),
       modo,
     }),
+
+  licencas: () => get<Licenca[]>('/api/licencas'),
+  importarPacote: (conteudo: unknown) =>
+    post<{
+      ok: true;
+      licenca: Licenca;
+      total: number;
+      inseridas: number;
+      repetido: boolean;
+    }>('/api/pacote/importar', conteudo),
 };

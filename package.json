@@ -17,6 +17,8 @@
     "import": "npm run import --workspace server --",
     "test": "npm run test --workspace server",
     "seed:demo": "npm run seed:demo --workspace server --",
+    "pacote": "npm run pacote --workspace server --",
+    "pacote:chaves": "npm run pacote --workspace server -- --chaves",
     "desktop": "npm run build && electron .",
     "dist": "npm run build && electron-builder --mac"
   },
