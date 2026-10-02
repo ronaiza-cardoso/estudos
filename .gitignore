@@ -11,3 +11,10 @@ data/
 *.pem
 # Pacotes emitidos: levam nome e e-mail de compradores.
 pacotes/
+
+# Prints importados: são seus arquivos, não do projeto.
+uploads/prints/
+
+# Prints de videoaula: material de curso pago, e o repositório é público.
+# A importação lê da pasta local; o código não depende deles.
+assets/

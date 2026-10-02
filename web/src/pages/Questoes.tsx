@@ -12,6 +12,7 @@ const SITUACOES = [
   { valor: '', nome: 'Todas' },
   { valor: 'nao_respondidas', nome: 'Não respondidas' },
   { valor: 'errei_ultima', nome: 'Errei na última' },
+  { valor: 'agendadas', nome: 'Marcadas para depois' },
   { valor: 'com_anotacoes', nome: 'Com anotações' },
   { valor: 'selecionadas', nome: 'Selecionadas' },
 ];

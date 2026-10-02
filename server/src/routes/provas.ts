@@ -1,7 +1,39 @@
 import type { FastifyInstance } from 'fastify';
 import { exec, q as consulta, tx, um } from '../db.js';
-import { agoraLocal } from '../util.js';
+import { agoraLocal, diaLocal } from '../util.js';
+import {
+  estados,
+  ordenarParaRevisao,
+  ordenarPorErros,
+  resumir,
+  semAdiadas,
+  type Estado,
+} from '../revisao.js';
 import { hidratar } from './questoes.js';
+
+async function criarProvaCom(nome: string, ids: string[]): Promise<number> {
+  return tx(async (c) => {
+    const r = await c.query<{ id: number }>(
+      'INSERT INTO provas (nome, criada_em) VALUES ($1, $2) RETURNING id',
+      [nome, agoraLocal()],
+    );
+    const provaId = r.rows[0].id;
+    for (const [i, questaoId] of ids.entries()) {
+      await c.query(
+        `INSERT INTO prova_questoes (prova_id, questao_id, ordem) VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+        [provaId, questaoId, i + 1],
+      );
+    }
+    return provaId;
+  });
+}
+
+/** Data curta para nomear caderno gerado, no formato que você lê: 30/09. */
+function hojeCurto(): string {
+  const [ano, mes, dia] = diaLocal().split('-');
+  return `${dia}/${mes}/${ano.slice(2)}`;
+}
 
 export function rotasProvas(app: FastifyInstance) {
   app.get('/api/provas', async () =>
@@ -127,6 +159,88 @@ export function rotasProvas(app: FastifyInstance) {
       return reply.code(201).send({ id: provaId, nome, questoes: sorteadas.length });
     },
   );
+
+  /* ------------------------------- revisão ------------------------------- */
+
+  /** Quanto está vencido hoje, sem gerar caderno nenhum. */
+  app.get<{ Querystring: { materia_id?: string; dias?: string } }>(
+    '/api/revisao',
+    async (req) => {
+      const lista = await estados({
+        materiaId: req.query.materia_id ? Number(req.query.materia_id) : null,
+        diasDoPeriodo: Number(req.query.dias) || 7,
+      });
+      return resumir(lista);
+    },
+  );
+
+  /**
+   * Caderno da sessão: o que a repetição espaçada diz que está vencido, com as
+   * que você errou na última vez no topo da fila.
+   */
+  app.post<{
+    Body: { nome?: string; materia_id?: number | null; quantidade?: number };
+  }>('/api/provas/revisao', async (req, reply) => {
+    const quantidade = Math.max(1, Math.min(Number(req.body?.quantidade ?? 20), 200));
+    const materia = req.body?.materia_id ? Number(req.body.materia_id) : null;
+
+    const lista = await estados({ materiaId: materia });
+    const fila = ordenarParaRevisao(semAdiadas(lista)).slice(0, quantidade);
+
+    if (fila.length === 0)
+      return reply.code(400).send({
+        erro: 'Nada para revisar ainda. Importe questões ou responda algumas primeiro.',
+      });
+
+    const nome = (req.body?.nome ?? '').trim() || `Revisão — ${hojeCurto()}`;
+    const provaId = await criarProvaCom(
+      nome,
+      fila.map((e) => e.questao_id),
+    );
+
+    return reply.code(201).send({
+      id: provaId,
+      nome,
+      questoes: fila.length,
+      vencidas: fila.filter((e: Estado) => e.vencida).length,
+    });
+  });
+
+  /**
+   * Caderno de erros — o de fim de semana. Só entra o que você errou dentro da
+   * janela, do que mais errou para o que menos errou.
+   */
+  app.post<{
+    Body: { nome?: string; materia_id?: number | null; quantidade?: number; dias?: number };
+  }>('/api/provas/erros', async (req, reply) => {
+    const quantidade = Math.max(1, Math.min(Number(req.body?.quantidade ?? 20), 200));
+    const dias = Math.max(1, Math.min(Number(req.body?.dias ?? 7), 365));
+    const materia = req.body?.materia_id ? Number(req.body.materia_id) : null;
+
+    const lista = await estados({ materiaId: materia, diasDoPeriodo: dias });
+    const fila = ordenarPorErros(semAdiadas(lista)).slice(0, quantidade);
+
+    if (fila.length === 0)
+      return reply
+        .code(400)
+        .send({ erro: `Você não errou nenhuma questão nos últimos ${dias} dias.` });
+
+    const nome =
+      (req.body?.nome ?? '').trim() ||
+      `Caderno de erros — ${dias === 7 ? 'semana' : `${dias} dias`} até ${hojeCurto()}`;
+
+    const provaId = await criarProvaCom(
+      nome,
+      fila.map((e) => e.questao_id),
+    );
+
+    return reply.code(201).send({
+      id: provaId,
+      nome,
+      questoes: fila.length,
+      erros: fila.reduce((s: number, e: Estado) => s + e.erros_no_periodo, 0),
+    });
+  });
 
   app.delete<{ Params: { id: string } }>('/api/provas/:id', async (req) => {
     await exec('DELETE FROM provas WHERE id = $1', [Number(req.params.id)]);

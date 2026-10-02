@@ -8,10 +8,13 @@ const TABELAS = [
   'questoes',
   'respostas',
   'anotacoes',
+  'agendamentos',
   'provas',
   'prova_questoes',
   'resultados',
   'config',
+  'notas',
+  'nota_tarefas',
 ] as const;
 
 /** Tabelas com id serial, cuja sequência precisa ser realinhada após restaurar. */
@@ -21,6 +24,7 @@ const COM_SEQUENCIA = [
   'respostas',
   'provas',
   'resultados',
+  'nota_tarefas',
 ] as const;
 
 export function rotasBackup(app: FastifyInstance) {

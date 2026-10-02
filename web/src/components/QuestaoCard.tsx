@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   BarChart3,
+  CalendarClock,
   Check,
   ChevronDown,
   ChevronRight,
@@ -10,7 +11,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { api, type Questao } from '../lib/api';
-import { dataHora } from '../lib/format';
+import { dataHora, diaMes } from '../lib/format';
+import { TextoMarcado } from './TextoMarcado';
 
 type Modo = 'banco' | 'prova' | 'revisao';
 type Gaveta = 'gabarito' | 'anotacoes' | 'estatisticas' | null;
@@ -69,6 +71,19 @@ export function QuestaoCard({
     setErro('');
   }
 
+  /**
+   * Tira a questão da fila de hoje e a traz na frente amanhã. Clicar de novo
+   * desmarca — é o mesmo botão nos dois sentidos.
+   */
+  async function adiar() {
+    try {
+      await api.agendar([questao.id], questao.agendada_para ? null : undefined);
+      aoAtualizar?.();
+    } catch (e) {
+      setErro((e as Error).message);
+    }
+  }
+
   async function excluir() {
     if (!confirm('Excluir esta questão definitivamente?')) return;
     try {
@@ -92,6 +107,11 @@ export function QuestaoCard({
           {questao.assunto ? ` › ${questao.assunto}` : ''}
         </span>
         {questao.anulada && <span className="tag tag-acento">Anulada</span>}
+        {questao.agendada_para && (
+          <span className="tag" title={`Volta na revisão de ${questao.agendada_para}`}>
+            <CalendarClock size={11} /> {diaMes(questao.agendada_para)}
+          </span>
+        )}
 
         {modo === 'banco' && aoSelecionar && (
           <label className="questao-selecionar">
@@ -133,13 +153,17 @@ export function QuestaoCard({
             Texto associado
           </button>
           {textoAssocAberto && (
-            <div className="questao-texto-assoc-corpo">{questao.texto_assoc}</div>
+            <div className="questao-texto-assoc-corpo">
+              <TextoMarcado texto={questao.texto_assoc} />
+            </div>
           )}
         </div>
       )}
 
       {/* ---------------- enunciado ---------------- */}
-      <div className="questao-enunciado">{questao.enunciado}</div>
+      <div className="questao-enunciado">
+        <TextoMarcado texto={questao.enunciado} />
+      </div>
 
       {/* ---------------- alternativas ---------------- */}
       <div className="alternativas">
@@ -165,7 +189,9 @@ export function QuestaoCard({
               }}
             >
               <span className="alternativa-letra">{letra}</span>
-              <span>{questao.alternativas[letra]}</span>
+              <span>
+                <TextoMarcado texto={questao.alternativas[letra]} />
+              </span>
             </button>
           );
         })}
@@ -221,6 +247,21 @@ export function QuestaoCard({
             >
               Estatísticas
             </ItemRodape>
+
+            {modo === 'banco' && !questao.anulada && (
+              <button
+                className="questao-rodape-item"
+                onClick={adiar}
+                title={
+                  questao.agendada_para
+                    ? 'Tirar a marcação e voltar para a fila normal'
+                    : 'Segurar esta questão até amanhã e trazê-la na frente da fila'
+                }
+              >
+                <CalendarClock size={13} />
+                {questao.agendada_para ? 'Não deixar para depois' : 'Responder amanhã'}
+              </button>
+            )}
 
             {questao.custom && modo === 'banco' && (
               <button
@@ -345,7 +386,8 @@ function Anotacoes({ questao, somenteLeitura }: { questao: Questao; somenteLeitu
 }
 
 function EstatisticasQuestao({ questao }: { questao: Questao }) {
-  const { tentativas, acertos, percentual, historico } = questao.estatisticas;
+  const { tentativas, acertos, percentual, historico, nivel, intervalo_dias } =
+    questao.estatisticas;
 
   if (tentativas === 0) {
     return <span className="rotulo">Você ainda não respondeu esta questão.</span>;
@@ -361,7 +403,18 @@ function EstatisticasQuestao({ questao }: { questao: Questao }) {
           valor={questao.anulada ? '—' : `${percentual}%`}
           acento={!questao.anulada && (percentual ?? 0) < 70}
         />
+        <Par
+          rotulo="Nível da revisão"
+          valor={String(nivel)}
+          acento={nivel === 0}
+        />
       </div>
+
+      <span className="rotulo">
+        {nivel === 0
+          ? 'Errou na última — volta na próxima revisão.'
+          : `Volta para revisão ${intervalo_dias} dia(s) depois da última resposta.`}
+      </span>
 
       <div className="historico-lista">
         {historico.map((r, i) => (

@@ -49,6 +49,13 @@ qualquer coisa, copie `.env.example` para `.env` e edite.
 > `TZ` padrão é `America/Sao_Paulo`. Se o seu for outro, ajuste no `.env` —
 > senão estudar à noite pode cair no dia seguinte nas estatísticas.
 
+### Na web, de qualquer dispositivo
+
+O `docker compose` acima roda na sua máquina, então só vale nela. Para abrir o
+app no celular e no notebook **vendo os mesmos dados**, o banco precisa sair do
+seu computador: é o que [DEPLOY.md](DEPLOY.md) descreve, incluindo como levar
+os dados que você já tem e o que muda na importação de prints.
+
 ---
 
 ## Login
@@ -192,6 +199,134 @@ estudado (menos de 30min, menos de 1h, menos de 2h, 2h ou mais).
 As sessões não guardam matéria — o pomodoro é só o contador. Então "o que foi
 estudado" no dia vem das questões e das provas, que têm matéria. Se quiser
 rotular a própria sessão, é preciso voltar um campo em `sessoes`.
+
+---
+
+## Notas e TODO do dia
+
+A aba **Notas** é o caderno de bordo: no fim da sessão você escreve o que
+estudou e o que a próxima sessão precisa pegar. No dia seguinte, abrir a aba já
+responde "por onde eu continuo".
+
+A tela tem três partes, nessa ordem:
+
+- **Para hoje** — tudo que está em aberto, do mais antigo para o mais novo.
+  A tarefa fica presa ao dia em que foi escrita, mas **não some na virada do
+  dia**: só sai da lista quando é marcada. O que ficou de trás vem com o selo
+  do dia em vermelho.
+- **Anotação do dia** — o texto livre, salvo sozinho enquanto você escreve, e o
+  campo de tarefas logo abaixo. **Enter** adiciona, **Shift+Enter** quebra a
+  linha, e colar uma lista inteira cria **uma tarefa por linha** — os `-`, `*`,
+  `1.` e `[ ]` do começo da linha são descartados. O seletor de data ao lado do
+  título permite escrever a nota de outro dia (o de ontem, se esqueceu; o de
+  amanhã, se quer deixar o plano pronto).
+- **Dias anteriores** — o histórico, com o texto e as tarefas de cada dia.
+
+Marcar uma tarefa não a tira da lista na hora: ela fica riscada até o próximo
+carregamento, para que um clique errado não obrigue a caçá-la no histórico.
+
+É uma nota por dia — o dia é a própria chave. Nota com texto vazio e sem
+tarefas é apagada, para não encher o histórico de dias em branco só porque a
+aba foi aberta.
+
+---
+
+## Importar prints de videoaula
+
+Os prints do VLC de uma videoaula viram questões pelo **primeiro campo do
+cadastro**: em *Questões › Cadastrar questão*, você arrasta os arquivos, o OCR
+lê, e o formulário abaixo já vem preenchido para conferir antes de salvar.
+
+Quando o lote dá mais de uma questão, o modal vira passo-a-passo ("questão 3 de
+9") e salvar leva para a próxima. Fechar no meio não perde nada: na próxima vez
+o cadastro oferece continuar de onde parou.
+
+A leitura é OCR local (Tesseract em português) dentro de um container, que roda
+com `--network none`. Não usa API paga e nenhum print sai da máquina. A imagem é
+construída sozinha na primeira leitura; o Docker precisa estar aberto.
+
+Também dá para ler uma pasta inteira pela linha de comando:
+
+```bash
+npm run import:prints -- --dir assets/portugues/aula-01
+```
+
+O lote lido pela linha de comando aparece no cadastro como leitura pendente.
+
+| Opção     | Obrigatória | Descrição                                        |
+| --------- | ----------- | ------------------------------------------------ |
+| `--dir`   | sim         | Pasta com os prints (.png, .jpg, .webp)          |
+| `--nome`  | não         | Nome do lote (padrão: nome da pasta)             |
+| `--banco` | não         | `app` (padrão) ou `projeto`                      |
+
+O lote entra como rascunho nos dois casos: a revisão é sempre na tela.
+
+PDF de prova continua em `npm run import` (seção abaixo), e não no cadastro: ele
+precisa do PDF do gabarito junto, mais cargo e tipo, que não cabem num campo de
+arrastar arquivo.
+
+### O que a leitura faz
+
+O mesmo slide costuma aparecer duas ou três vezes na aula — limpo, anotado pelo
+professor, e com o gabarito revelado. Os frames são agrupados **pelo conteúdo do
+enunciado**, nunca pela hora do arquivo: nos prints reais, dois snapshots a três
+segundos de distância eram slides diferentes, enquanto o gabarito de uma questão
+veio quase dois minutos depois do frame limpo dela.
+
+O gabarito sai da cor, não do texto. Nesses slides há **dois vermelhos** com
+significados opostos, e confundi-los envenenaria o banco:
+
+- **caneta à mão livre**, quase sempre no enunciado, marcando os termos que a
+  questão cita. O glifo continua preto. Vira `__sublinhado__` no enunciado.
+- **a alternativa inteira repintada de vermelho**, na fonte do slide. Aí são os
+  próprios glifos que mudam de cor, e isso é o gabarito.
+
+São duas medidas diferentes — cor dos pixels do texto contra cor dos pixels logo
+abaixo dele — e por isso não dependem de nenhum modelo.
+
+Os grifos entram no enunciado como `__sublinhado__` e `==marca-texto==`, e o app
+os renderiza. Sem eles, uma questão de banca do tipo *"os termos sublinhados
+acima constituem, respectivamente:"* ficaria sem resposta possível.
+
+### O que ela não faz bem
+
+- **Matéria** não é deduzida. Escolha a matéria do lote na hora de importar.
+- **Cabeçalho** (banca, ano, órgão, cargo) sai de heurística sobre formatos
+  variados. Erra às vezes; os campos são editáveis na revisão.
+- **Slide dentro do vídeo** costuma vir cortado no próprio print, e aí falta
+  alternativa. A questão é marcada como cortada.
+- **Questão sem gabarito não entra no banco** por padrão. Sem gabarito, toda
+  resposta contaria como erro e a revisão espaçada repetiria para sempre uma
+  questão impossível de acertar.
+
+---
+
+## Revisão espaçada
+
+Não há estado guardado: nível, vencimento e prioridade são calculados a partir
+da tabela `respostas`. Vale retroativamente para tudo que você já respondeu, e
+não existe um segundo lugar onde a verdade possa divergir do histórico.
+
+O nível é o número de acertos seguidos no fim do histórico, e o intervalo até a
+questão voltar vem dele:
+
+| Nível     | 0        | 1     | 2      | 3      | 4       | 5       |
+| --------- | -------- | ----- | ------ | ------ | ------- | ------- |
+| Intervalo | volta já | 1 dia | 3 dias | 7 dias | 14 dias | 30 dias |
+
+Errar zera o nível, e nível zero vence no mesmo dia — é isso que faz a questão
+errada voltar na próxima sessão, e continuar voltando até você acertar algumas
+vezes seguidas.
+
+Na aba **Provas**, dois botões montam caderno a partir disso:
+
+- **Caderno da sessão de hoje** — o que venceu, com as erradas no topo da fila.
+- **Caderno das que mais errei** — ignora vencimento e junta só o que você errou
+  dentro da janela (7 dias por padrão), da que mais errou para a que menos
+  errou. É o de fim de semana.
+
+Questões anuladas e sem gabarito ficam fora das duas: não há como acertar nem
+errar, então não há o que espaçar.
 
 ---
 
@@ -385,16 +520,22 @@ estudos/
 │   │   ├── pacote.ts       formato .estudos: licença e assinatura Ed25519
 │   │   ├── chave-publica.ts  chave que confere os pacotes (gerada)
 │   │   ├── pacote-cli.ts   gera as chaves e emite os pacotes de venda
+│   │   ├── revisao.ts      repetição espaçada calculada do histórico
+│   │   ├── notas.ts        notas do dia e o TODO que sai delas
 │   │   ├── routes/         materias, sessoes, questoes, provas, config,
-│   │   │                   backup, pacote, auth (login + guarda das rotas)
+│   │   │                   backup, pacote, importacao, notas, auth
 │   │   └── import/         parser de PDF, gabarito e CLI
-│   └── test/               testes do parser, do login e do pacote + fixtures
+│   │       └── prints/     leitura dos prints: container, fusão e lote
+│   ├── ocr/                imagem do OCR (Tesseract + análise de cor)
+│   └── test/               parser, login, pacote, prints, revisão e notas
+│                           + fixtures
 └── web/
     └── src/
         ├── styles/tokens.css   tokens do design system
-        ├── components/         modais e cartão de questão
-        └── pages/              login, pomodoro, sessões, questões, provas,
-                                config
+        ├── components/         modais (cadastro com importador de print),
+        │                       cartão de questão, grifos e visualizador
+        └── pages/              login, pomodoro, notas, sessões, questões,
+                                provas, config
 ```
 
 ### Modelo de dados
@@ -410,6 +551,9 @@ provas(id, nome, criada_em) + prova_questoes(prova_id, questao_id, ordem)
 resultados(id, prova_id, acertos, total, tempo_seg, ts)
 config(chave, valor)
 
+notas(dia, texto, criada_em, atualizado_em)
+nota_tarefas(id, dia, texto, feita, ordem, criada_em, feita_em)
+
 usuarios(id, login, senha_hash, criado_em)
 sessoes_login(token, usuario_id, criada_em, expira_em)
 
@@ -422,6 +566,11 @@ licencas(id, banco, para, email, emitido_em, importado_em, questoes)
 
 `licencas` é só carimbo: as questões do pacote já estão em `questoes`, e apagar
 a linha não as remove.
+
+`notas` é chaveada pelo dia: não existe "duas notas do mesmo dia", e gravar
+vira um upsert. A tarefa guarda o dia em que foi escrita, mas quem decide se
+ela ainda é trabalho pendente é `feita`, não a data — é isso que faz o que
+sobrou de ontem aparecer na sessão de hoje.
 
 `sessoes` não guarda matéria — o pomodoro é só o contador. As estatísticas por
 matéria são de questões (respondidas e % de acerto).

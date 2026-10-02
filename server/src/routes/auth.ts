@@ -41,14 +41,20 @@ const ABERTAS = new Set([
   '/api/primeiro-acesso',
 ]);
 
-function opcoesCookie() {
+function opcoesCookie(req: FastifyRequest) {
   return {
     path: '/',
     httpOnly: true,
     sameSite: 'lax' as const,
-    // Só com HTTPS na frente. Ligado em HTTP puro, o navegador descarta o
-    // cookie e o login entra em laço — por isso o padrão é desligado.
-    secure: process.env.COOKIE_SEGURO === '1',
+    /**
+     * `Secure` só faz sentido com HTTPS: ligado em HTTP puro, o navegador
+     * descarta o cookie e o login entra em laço. Por isso a decisão é por
+     * requisição, e não por configuração — com o proxy do host confiável
+     * (`trustProxy` no index), `req.protocol` já reflete o X-Forwarded-Proto,
+     * então o acerto é automático na nuvem e em casa. `COOKIE_SEGURO=1`
+     * continua forçando, para quem sabe o que tem na frente.
+     */
+    secure: process.env.COOKIE_SEGURO === '1' || req.protocol === 'https',
     maxAge: DIAS_SESSAO * 24 * 60 * 60,
   };
 }
@@ -117,7 +123,7 @@ export async function registrarAutenticacao(app: FastifyInstance) {
 
       const usuario = await criarConta(login, req.body!.senha!);
       const token = await criarSessao(usuario.id);
-      reply.setCookie(COOKIE_SESSAO, token, opcoesCookie());
+      reply.setCookie(COOKIE_SESSAO, token, opcoesCookie(req));
       return { ok: true, usuario };
     },
   );
@@ -149,7 +155,7 @@ export async function registrarAutenticacao(app: FastifyInstance) {
 
     limparFalhas(chave);
     const token = await criarSessao(usuario.id);
-    reply.setCookie(COOKIE_SESSAO, token, opcoesCookie());
+    reply.setCookie(COOKIE_SESSAO, token, opcoesCookie(req));
     return { ok: true, usuario: { id: usuario.id, login: usuario.login } };
   });
 

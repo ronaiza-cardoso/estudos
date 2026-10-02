@@ -273,3 +273,5 @@ function Interruptor({
     </label>
   );
 }
+
+

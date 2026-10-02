@@ -20,7 +20,8 @@
     "pacote": "npm run pacote --workspace server --",
     "pacote:chaves": "npm run pacote --workspace server -- --chaves",
     "desktop": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --mac"
+    "dist": "npm run build && electron-builder --mac",
+    "import:prints": "npm run import:prints --workspace server --"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   BarChart3,
+  CalendarClock,
   FileText,
   ListChecks,
   LogOut,
+  NotebookPen,
   Settings,
   Timer,
   X,
@@ -21,14 +23,16 @@ import { plural } from './lib/format';
 import { Login } from './pages/Login';
 import { Pomodoro } from './pages/Pomodoro';
 import { Sessoes } from './pages/Sessoes';
+import { Notas } from './pages/Notas';
 import { Questoes } from './pages/Questoes';
 import { Provas } from './pages/Provas';
 import { Configuracoes } from './pages/Configuracoes';
 
-type Aba = 'pomodoro' | 'sessoes' | 'questoes' | 'provas' | 'config';
+type Aba = 'pomodoro' | 'notas' | 'sessoes' | 'questoes' | 'provas' | 'config';
 
 const ABAS: { id: Aba; nome: string; icone: typeof Timer }[] = [
   { id: 'pomodoro', nome: 'Pomodoro', icone: Timer },
+  { id: 'notas', nome: 'Notas', icone: NotebookPen },
   { id: 'sessoes', nome: 'Sessões', icone: BarChart3 },
   { id: 'questoes', nome: 'Questões', icone: ListChecks },
   { id: 'provas', nome: 'Provas', icone: FileText },
@@ -46,6 +50,7 @@ export function App() {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [nomeProva, setNomeProva] = useState('');
   const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
   const [emFoco, setEmFoco] = useState(false);
   const [licencas, setLicencas] = useState<Licenca[]>([]);
 
@@ -119,6 +124,20 @@ export function App() {
     setErro('');
     setAvisoSessao('');
     setSessao(await api.sessao());
+  }
+
+  /** Tira as selecionadas da fila de hoje; amanhã elas vêm na frente. */
+  async function deixarParaAmanha() {
+    try {
+      const { data } = await api.agendar([...selecionadas]);
+      setSelecionadas(new Set());
+      setErro('');
+      setAviso(
+        `${plural(selecionadas.size, 'questão marcada', 'questões marcadas')} para ${data}.`,
+      );
+    } catch (e) {
+      setErro((e as Error).message);
+    }
   }
 
   async function gerarProva() {
@@ -214,6 +233,15 @@ export function App() {
       )}
 
       <main className={`conteudo ${mostraBarra ? 'conteudo-com-barra' : ''}`}>
+        {!emFoco && aviso && (
+          <div className="aviso aviso-ok linha" style={{ justifyContent: 'space-between' }}>
+            {aviso}
+            <button className="botao botao-nu" onClick={() => setAviso('')} aria-label="Fechar">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {!emFoco && erro && (
           <div className="aviso aviso-erro linha" style={{ justifyContent: 'space-between' }}>
             {erro}
@@ -231,6 +259,8 @@ export function App() {
             aoMudarFoco={setEmFoco}
           />
         </div>
+
+        {!emFoco && aba === 'notas' && <Notas />}
 
         {!emFoco && aba === 'sessoes' && (
           <Sessoes estatisticas={estatisticas} aoAtualizar={carregarSessoes} />
@@ -272,6 +302,9 @@ export function App() {
             />
             <button className="botao" onClick={gerarProva}>
               <FileText size={15} /> Gerar prova
+            </button>
+            <button className="botao" onClick={deixarParaAmanha}>
+              <CalendarClock size={15} /> Responder amanhã
             </button>
             <button
               className="botao"

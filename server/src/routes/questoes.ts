@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { exec, materiaId, q as consulta, um } from '../db.js';
-import { agoraLocal } from '../util.js';
+import { agoraLocal, diaLocal } from '../util.js';
+import { INTERVALOS, NIVEL_MAXIMO } from '../revisao.js';
 
 type LinhaQuestao = {
   id: string;
@@ -18,6 +19,7 @@ type LinhaQuestao = {
   anulada: boolean;
   custom: boolean;
   anotacao: string | null;
+  agendada_para: string | null;
 };
 
 /** Corpo aceito no cadastro manual de questão. */
@@ -40,10 +42,11 @@ type CorpoQuestao = {
 const SELECT_BASE = `
   SELECT q.id, q.materia_id, m.nome AS materia, q.assunto, q.ano, q.banca, q.orgao,
          q.prova, q.texto_assoc, q.enunciado, q.alternativas_json, q.gabarito,
-         q.anulada, q.custom, a.texto AS anotacao
+         q.anulada, q.custom, a.texto AS anotacao, g.data AS agendada_para
     FROM questoes q
-    LEFT JOIN materias  m ON m.id = q.materia_id
-    LEFT JOIN anotacoes a ON a.questao_id = q.id
+    LEFT JOIN materias     m ON m.id = q.materia_id
+    LEFT JOIN anotacoes    a ON a.questao_id = q.id
+    LEFT JOIN agendamentos g ON g.questao_id = q.id
 `;
 
 const ULTIMA_CORRETA = `
@@ -75,6 +78,9 @@ function montarFiltros(f: Record<string, string | undefined>) {
       break;
     case 'errei_ultima':
       where.push(`${ULTIMA_CORRETA} = FALSE`);
+      break;
+    case 'agendadas':
+      where.push('EXISTS (SELECT 1 FROM agendamentos g WHERE g.questao_id = q.id)');
       break;
     case 'com_anotacoes':
       where.push("a.texto IS NOT NULL AND btrim(a.texto) <> ''");
@@ -124,6 +130,14 @@ async function hidratar(linhas: LinhaQuestao[]) {
     }));
     const acertos = historico.filter((r) => r.correta === 1).length;
 
+    // Nível da repetição espaçada: acertos seguidos a partir da última
+    // resposta. O histórico já vem do mais novo para o mais antigo.
+    let nivel = 0;
+    for (const r of historico) {
+      if (r.correta !== 1 || nivel >= NIVEL_MAXIMO) break;
+      nivel++;
+    }
+
     return {
       id: l.id,
       materia_id: l.materia_id,
@@ -140,9 +154,12 @@ async function hidratar(linhas: LinhaQuestao[]) {
       anulada: l.anulada,
       custom: l.custom,
       anotacao: l.anotacao ?? '',
+      agendada_para: l.agendada_para,
       estatisticas: {
         tentativas: historico.length,
         acertos,
+        nivel,
+        intervalo_dias: INTERVALOS[nivel],
         percentual:
           historico.length > 0 ? Math.round((acertos / historico.length) * 100) : null,
         ultima: historico[0] ?? null,
@@ -171,7 +188,9 @@ export function rotasQuestoes(app: FastifyInstance) {
       );
 
       const linhas = await consulta<LinhaQuestao>(
-        `${SELECT_BASE}${sql} ORDER BY q.criada_em, q.id
+        // Mais nova primeiro: quem acabou de cadastrar quer conferir o que
+        // entrou, não rolar até o fim do banco.
+        `${SELECT_BASE}${sql} ORDER BY q.criada_em DESC, q.id DESC
          LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
         [...params, limite, offset],
       );
@@ -192,6 +211,52 @@ export function rotasQuestoes(app: FastifyInstance) {
     );
     return { total, por_materia };
   });
+
+  /**
+   * "Responder amanhã" — adia um punhado de questões para uma data.
+   *
+   * Vale mais que a conta da repetição espaçada nos dois sentidos: até o dia
+   * marcado a questão some da fila, e no dia ela vem na frente de tudo.
+   */
+  app.put<{ Body: { ids?: string[]; data?: string | null; dias?: number } }>(
+    '/api/questoes/agendar',
+    async (req, reply) => {
+      const ids = (req.body?.ids ?? []).filter((id) => typeof id === 'string' && id.trim());
+      if (ids.length === 0)
+        return reply.code(400).send({ erro: 'Escolha ao menos uma questão.' });
+
+      // `data: null` desmarca. Sem data, amanhã — é o caso de longe mais comum.
+      if (req.body?.data === null) {
+        const removidas = await exec('DELETE FROM agendamentos WHERE questao_id = ANY($1::text[])', [
+          ids,
+        ]);
+        return { agendadas: 0, removidas, data: null };
+      }
+
+      let data = (req.body?.data ?? '').trim();
+      if (!data) {
+        const dias = Number.isFinite(Number(req.body?.dias)) ? Number(req.body?.dias) : 1;
+        const alvo = new Date(`${diaLocal()}T00:00:00Z`);
+        alvo.setUTCDate(alvo.getUTCDate() + Math.max(0, Math.min(dias, 365)));
+        data = alvo.toISOString().slice(0, 10);
+      }
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data))
+        return reply.code(400).send({ erro: 'Data inválida.' });
+
+      let agendadas = 0;
+      for (const id of ids) {
+        agendadas += await exec(
+          `INSERT INTO agendamentos (questao_id, data, criado_em) VALUES ($1, $2, $3)
+           ON CONFLICT (questao_id) DO UPDATE
+             SET data = EXCLUDED.data, criado_em = EXCLUDED.criado_em`,
+          [id, data, agoraLocal()],
+        );
+      }
+
+      return { agendadas, removidas: 0, data };
+    },
+  );
 
   app.post<{ Body: CorpoQuestao }>('/api/questoes', async (req, reply) => {
     const b: CorpoQuestao = req.body ?? {};
@@ -263,6 +328,10 @@ export function rotasQuestoes(app: FastifyInstance) {
       if (!alternativa) return reply.code(400).send({ erro: 'Escolha uma alternativa.' });
 
       const correta = questao.gabarito !== null && alternativa === questao.gabarito;
+
+      // Respondida é agendamento cumprido: deixá-lo de pé traria a questão de
+      // volta na frente da fila amanhã sem motivo.
+      await exec('DELETE FROM agendamentos WHERE questao_id = $1', [req.params.id]);
 
       await exec(
         'INSERT INTO respostas (questao_id, alternativa, correta, ts, origem) VALUES ($1, $2, $3, $4, $5)',

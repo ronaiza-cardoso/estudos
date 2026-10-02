@@ -88,9 +88,14 @@ export type Questao = {
   anulada: boolean;
   custom: boolean;
   anotacao: string;
+  /** Data marcada com "responder amanhã" (AAAA-MM-DD), se houver. */
+  agendada_para: string | null;
   estatisticas: {
     tentativas: number;
     acertos: number;
+    /** Acertos seguidos no fim do histórico. Zero = errou na última. */
+    nivel: number;
+    intervalo_dias: number;
     percentual: number | null;
     ultima: Resposta | null;
     historico: Resposta[];
@@ -164,6 +169,57 @@ export type DetalheDia = {
 
 export type Config = Record<string, string>;
 
+/* ---------------------- importação de prints ---------------------- */
+
+/** Rascunho de questão lido de um ou mais prints do mesmo slide. */
+export type ItemImportado = {
+  id: number;
+  estado: 'rascunho' | 'importada' | 'descartada';
+  questao_id: string | null;
+  arquivos: string[];
+  banca: string | null;
+  ano: number | null;
+  orgao: string | null;
+  prova: string | null;
+  materia: string | null;
+  assunto: string | null;
+  texto_assoc: string | null;
+  enunciado: string;
+  alternativas: Record<string, string>;
+  gabarito: string | null;
+  gabarito_evidencia: string | null;
+  cortada: boolean;
+  observacao: string | null;
+};
+
+export type ImportacaoResumo = {
+  id: number;
+  nome: string;
+  criada_em: string;
+  estado: 'processando' | 'concluida' | 'erro';
+  total: number;
+  processados: number;
+  erro: string | null;
+  itens: number;
+};
+
+export type Importacao = Omit<ImportacaoResumo, 'itens'> & { itens: ItemImportado[] };
+
+export type ArquivoEnviado = { nome: string; mime: string; base64: string };
+
+/* ------------------------- revisão espaçada ------------------------- */
+
+export type ResumoRevisao = {
+  total: number;
+  vencidas: number;
+  agendadas_hoje: number;
+  agendadas_depois: number;
+  nunca_respondidas: number;
+  errei_na_ultima: number;
+  com_erro_no_periodo: number;
+  por_nivel: { nivel: number; intervalo_dias: number; questoes: number }[];
+};
+
 /** Carimbo de um pacote de questões comprado. */
 export type Licenca = {
   id: string;
@@ -173,6 +229,30 @@ export type Licenca = {
   emitido_em: string;
   importado_em: string;
   questoes: number;
+};
+
+/* --------------------------- notas e tarefas --------------------------- */
+
+/** Item do TODO. Fica preso ao dia em que foi escrito, mas vive até ser feito. */
+export type Tarefa = {
+  id: number;
+  dia: string;
+  texto: string;
+  feita: boolean;
+  ordem: number;
+  criada_em: string;
+  feita_em: string | null;
+};
+
+/** A anotação de um dia de estudo, com o TODO escrito nele. */
+export type Nota = {
+  dia: string;
+  texto: string;
+  criada_em: string;
+  atualizado_em: string;
+  tarefas: Tarefa[];
+  /** Verdadeiro quando salvar com texto vazio apagou a nota. */
+  removida?: boolean;
 };
 
 export type EstadoLogin = {
@@ -233,6 +313,12 @@ export const api = {
       `/api/questoes/${id}/responder`,
       { alternativa, origem },
     ),
+  /** Sem `data`, cai em amanhã. `data: null` desmarca. */
+  agendar: (ids: string[], data?: string | null) =>
+    put<{ agendadas: number; removidas: number; data: string | null }>(
+      '/api/questoes/agendar',
+      { ids, ...(data === undefined ? {} : { data }) },
+    ),
   salvarAnotacao: (id: string, texto: string) =>
     put<{ ok: true }>(`/api/questoes/${id}/anotacao`, { texto }),
 
@@ -258,6 +344,65 @@ export const api = {
       ...(conteudo as object),
       modo,
     }),
+
+  revisao: (filtros: { materia_id?: number | null; dias?: number } = {}) => {
+    const p = new URLSearchParams();
+    if (filtros.materia_id) p.set('materia_id', String(filtros.materia_id));
+    if (filtros.dias) p.set('dias', String(filtros.dias));
+    return get<ResumoRevisao>(`/api/revisao?${p}`);
+  },
+  provaRevisao: (dados: { nome?: string; materia_id?: number | null; quantidade: number }) =>
+    post<{ id: number; nome: string; questoes: number; vencidas: number }>(
+      '/api/provas/revisao',
+      dados,
+    ),
+  provaErros: (dados: {
+    nome?: string;
+    materia_id?: number | null;
+    quantidade: number;
+    dias: number;
+  }) =>
+    post<{ id: number; nome: string; questoes: number; erros: number }>(
+      '/api/provas/erros',
+      dados,
+    ),
+
+  ambienteImportacao: () =>
+    get<{ pronto: boolean; imagem: string | null; erro: string | null }>(
+      '/api/importacoes/ambiente',
+    ),
+
+  importacoes: () => get<ImportacaoResumo[]>('/api/importacoes'),
+  /** Imagem servida direto pela tag <img>, sem passar pelo cliente HTTP. */
+  urlPrint: (importacaoId: number, arquivo: string) =>
+    `/api/importacoes/${importacaoId}/prints/${encodeURIComponent(arquivo)}`,
+  importacao: (id: number) => get<Importacao>(`/api/importacoes/${id}`),
+  criarImportacao: (nome: string, arquivos: ArquivoEnviado[]) =>
+    post<{ id: number; nome: string; total: number }>('/api/importacoes', { nome, arquivos }),
+  salvarItem: (importacaoId: number, itemId: number, dados: Partial<ItemImportado>) =>
+    put<{ ok: true }>(`/api/importacoes/${importacaoId}/itens/${itemId}`, dados),
+  importacaoPendente: () => get<{ lote: Importacao | null }>('/api/importacoes/pendente'),
+  confirmarImportacao: (
+    id: number,
+    dados: { materia_padrao?: string; itens?: number[] } = {},
+  ) =>
+    post<{
+      inseridas: number;
+      repetidas: number;
+      sem_gabarito: number;
+      questao_ids: string[];
+    }>(`/api/importacoes/${id}/confirmar`, dados),
+  removerImportacao: (id: number) => remover<{ ok: true }>(`/api/importacoes/${id}`),
+
+  notas: (limite = 60) => get<Nota[]>(`/api/notas?limite=${limite}`),
+  tarefasPendentes: () => get<{ hoje: string; tarefas: Tarefa[] }>('/api/notas/pendentes'),
+  salvarNota: (dia: string, texto: string) => put<Nota>(`/api/notas/${dia}`, { texto }),
+  removerNota: (dia: string) => remover<{ ok: true }>(`/api/notas/${dia}`),
+  criarTarefas: (dia: string, texto: string) =>
+    post<Tarefa[]>(`/api/notas/${dia}/tarefas`, { texto }),
+  salvarTarefa: (id: number, dados: { texto?: string; feita?: boolean }) =>
+    put<Tarefa>(`/api/tarefas/${id}`, dados),
+  removerTarefa: (id: number) => remover<{ ok: true }>(`/api/tarefas/${id}`),
 
   licencas: () => get<Licenca[]>('/api/licencas'),
   importarPacote: (conteudo: unknown) =>

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { basename } from 'node:path';
 import { existsSync } from 'node:fs';
+import { acharCaminho, naoEncontrado } from './caminho.js';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { abrirBanco, dirBancoApp, dirBancoProjeto, encerrarBanco, migrar } from '../db.js';
@@ -67,8 +68,8 @@ async function main() {
     return;
   }
 
-  const provaPdf = args.prova as string;
-  const gabaritoPdf = args.gabarito as string;
+  let provaPdf = args.prova as string;
+  let gabaritoPdf = args.gabarito as string;
   const cargo = args.cargo as string;
   const tipo = args.tipo as string;
 
@@ -86,12 +87,20 @@ async function main() {
     return;
   }
 
-  for (const arquivo of [provaPdf, gabaritoPdf]) {
-    if (!existsSync(arquivo)) {
-      console.error(`Arquivo não encontrado: ${arquivo}`);
+  // Resolvido aqui, e não onde foi digitado: `--workspace server` roda o
+  // script de dentro de `server/`, então um caminho relativo apontaria para lá.
+  for (const [rotulo, arquivo] of [
+    ['--prova', provaPdf],
+    ['--gabarito', gabaritoPdf],
+  ] as const) {
+    const achado = acharCaminho(arquivo, 'arquivo');
+    if (!achado) {
+      console.error(naoEncontrado(arquivo, 'arquivo'));
       process.exitCode = 1;
       return;
     }
+    if (rotulo === '--prova') provaPdf = achado;
+    else gabaritoPdf = achado;
   }
 
   // Sem isto, o import cairia no banco de desenvolvimento e as questões

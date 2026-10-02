@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
-import { abrirBanco, encerrarBanco, garantirConfig, migrar } from './db.js';
+import { URL_BANCO, abrirBanco, encerrarBanco, garantirConfig, migrar } from './db.js';
 import { limparSessoesVencidas, loginAtivo } from './auth.js';
 import { popularSeed } from './seed.js';
 import { rotasMaterias } from './routes/materias.js';
@@ -15,16 +15,45 @@ import { rotasProvas } from './routes/provas.js';
 import { rotasConfig } from './routes/config.js';
 import { rotasBackup } from './routes/backup.js';
 import { rotasPacote } from './routes/pacote.js';
+import { rotasImportacao } from './routes/importacao.js';
+import { rotasNotas } from './routes/notas.js';
+import { fecharImportacoesOrfas } from './import/prints/job.js';
 import { registrarAutenticacao } from './routes/auth.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
+// O host da nuvem decide a porta e a injeta em PORT.
 const PORTA = Number(process.env.PORT ?? 5183);
-// No Docker precisa escutar em 0.0.0.0; localmente, só no loopback.
-const HOST = process.env.HOST ?? '127.0.0.1';
+
+/**
+ * Em modo servidor (Docker, nuvem) o processo precisa escutar em todas as
+ * interfaces, senão o proxy do host não alcança o app. Localmente fica no
+ * loopback: o app não aparece na rede sem você pedir.
+ */
+const HOST = process.env.HOST ?? (URL_BANCO ? '0.0.0.0' : '127.0.0.1');
+
+/**
+ * Atrás do proxy do host, `req.ip` seria o endereço do próprio proxy — e a
+ * trava de força bruta do login viraria um balde único para o mundo inteiro.
+ * É também daqui que sai `req.protocol === 'https'`, que decide o cookie
+ * Secure. `ESTUDOS_PROXY=0` desliga para quem expõe o Node direto.
+ *
+ * Confiar só no **primeiro salto** (o proxy que abriu a conexão), e não em
+ * `true`: com `true` valeria o endereço mais à esquerda do X-Forwarded-For,
+ * que qualquer cliente pode escrever — e a trava do login cairia só mandando
+ * um cabeçalho diferente a cada tentativa. Assim vale o último endereço do
+ * cabeçalho, o único que o proxy escreveu.
+ */
+const ATRAS_DE_PROXY = process.env.ESTUDOS_PROXY === '0' ? false : Boolean(URL_BANCO);
+
+/** Equivale a `trustProxy: 1`, que a tipagem desta versão do Fastify recusa. */
+const soPrimeiroSalto = (_endereco: string, salto: number) => salto === 0;
 
 await abrirBanco();
 await migrar();
 await garantirConfig();
+
+const orfas = await fecharImportacoesOrfas();
+if (orfas > 0) console.log(`${orfas} importação(ões) interrompida(s) foram encerradas.`);
 
 const inseridas = await popularSeed();
 if (inseridas > 0) console.log(`seed-questoes.js: ${inseridas} questões carregadas.`);
@@ -36,7 +65,22 @@ if (loginAtivo()) {
   console.log('Login desativado (banco embutido). Use ESTUDOS_LOGIN=1 para exigir senha.');
 }
 
-const app = Fastify({ logger: false, bodyLimit: 32 * 1024 * 1024 });
+if (URL_BANCO && !process.env.TZ) {
+  console.warn(
+    'Atenção: TZ não está definida. As datas seriam gravadas em UTC e o que ' +
+      'você estuda à noite cairia no dia seguinte. Defina TZ=America/Sao_Paulo.',
+  );
+}
+
+const app = Fastify({
+  logger: false,
+  bodyLimit: 32 * 1024 * 1024,
+  // Um salto: confia no proxy que está na frente, e não na cadeia inteira de
+  // X-Forwarded-For — que o cliente consegue forjar. O Fastify aceita o número
+  // em tempo de execução, mas a tipagem desta versão só declara
+  // boolean/string/lista, daí o cast.
+  trustProxy: ATRAS_DE_PROXY ? soPrimeiroSalto : false,
+});
 
 // Sem `credentials: true` de propósito: o cookie de sessão é SameSite=Lax e
 // nunca deve viajar para outra origem. Nos três modos o front é servido da
@@ -56,6 +100,8 @@ rotasProvas(app);
 rotasConfig(app);
 rotasBackup(app);
 rotasPacote(app);
+rotasImportacao(app);
+rotasNotas(app);
 
 // Em produção (Docker) o próprio Fastify serve o front já compilado.
 // Em desenvolvimento quem serve é o Vite, então a pasta não existe.

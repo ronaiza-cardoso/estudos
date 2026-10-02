@@ -890,3 +890,476 @@
 }
 
 .aba-sair:hover { color: var(--cor-acento-texto); }
+
+/* ==========================================================================
+   Grifos do enunciado
+
+   O slide marca com caneta e marca-texto, e em questões de "os termos
+   sublinhados acima" a marcação É a pergunta. Sem isso, a questão importada
+   fica sem resposta possível.
+   ========================================================================== */
+
+.grifo-sublinhado {
+  text-decoration: underline;
+  text-decoration-color: var(--cor-acento);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.grifo-marcado {
+  background: var(--cor-acento-fraco);
+  color: inherit;
+  box-shadow: 0 0 0 2px var(--cor-acento-fraco);
+}
+
+/* ==========================================================================
+   Importação de prints
+   ========================================================================== */
+
+.area-solta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-6) var(--esp-4);
+  border: var(--traco) dashed var(--cor-borda-suave);
+  background: var(--cor-superficie);
+  text-align: center;
+}
+
+.area-solta p { font-size: var(--texto-p); }
+
+/* Frase de apoio em caixa normal — `.rotulo` é caixa-alta e não serve para
+   texto corrido. */
+.dica {
+  max-width: 78ch;
+  font-size: var(--texto-pp);
+  color: var(--cor-texto-suave);
+}
+
+.sublinhado {
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+}
+
+.grade-previas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--esp-2);
+}
+
+.previa {
+  position: relative;
+  margin: 0;
+  border: var(--borda-suave);
+  background: var(--cor-superficie);
+}
+
+.previa img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-bottom: var(--borda-suave);
+}
+
+.previa figcaption {
+  padding: var(--esp-1) var(--esp-2);
+  font-size: var(--texto-ppp);
+  color: var(--cor-texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previa-remover {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  padding: var(--esp-1);
+  border: none;
+  border-left: var(--borda-suave);
+  border-bottom: var(--borda-suave);
+  background: var(--cor-superficie);
+  color: var(--cor-acento-texto);
+  cursor: pointer;
+}
+
+.previa-remover:hover { background: var(--cor-acento-fraco); }
+
+.barra-progresso {
+  width: 100%;
+  height: 10px;
+  border: var(--borda);
+  background: var(--cor-superficie);
+}
+
+.barra-progresso-preenchida {
+  height: 100%;
+  background: var(--cor-acento);
+  transition: width 300ms linear;
+}
+
+/* Cinco colunas estreitas para a origem da questão (banca, ano, órgão…). */
+.filtros-compactos {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--esp-3);
+  padding: var(--esp-3) var(--esp-4);
+  border-bottom: var(--borda-suave);
+}
+
+.questao-descartada {
+  opacity: 0.45;
+}
+
+.questao-descartada .alternativa {
+  pointer-events: none;
+}
+
+.questao-alerta {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-4);
+  border-bottom: var(--borda-suave);
+  background: var(--cor-acento-fraco);
+  color: var(--cor-acento-texto);
+  font-size: var(--texto-p);
+}
+
+/* ==========================================================================
+   Revisão espaçada
+   ========================================================================== */
+
+.niveis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  border: var(--borda-suave);
+}
+
+.nivel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--esp-2);
+  border-right: var(--borda-suave);
+  text-align: center;
+}
+
+.nivel:last-child { border-right: none; }
+
+.nivel .numero { font-size: var(--texto-m); }
+
+/* ==========================================================================
+   Visualizador do print
+
+   O OCR erra, e consertar o enunciado sem ver o slide original é adivinhação.
+   A miniatura fica na faixa do cartão; o clique abre o print inteiro.
+   ========================================================================== */
+
+.tiras {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.tira {
+  display: block;
+  width: 46px;
+  height: 26px;
+  padding: 0;
+  border: var(--borda-suave);
+  background: var(--cor-superficie);
+  cursor: zoom-in;
+}
+
+.tira:hover { border-color: var(--cor-acento); }
+
+.tira img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lente {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  padding: var(--esp-4);
+  background: rgb(32 30 29 / 0.82);
+}
+
+.lente-topo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--cor-superficie);
+  border: var(--borda);
+}
+
+.lente-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--texto-p);
+  font-weight: var(--peso-forte);
+}
+
+.lente-corpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-3);
+}
+
+.lente-corpo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border: var(--borda);
+  background: var(--cor-superficie);
+}
+
+.lente-seta {
+  display: flex;
+  padding: var(--esp-3);
+  border: var(--borda);
+  background: var(--cor-superficie);
+  cursor: pointer;
+}
+
+.lente-seta:hover { background: var(--cor-acento); color: #fff; }
+
+/* ==========================================================================
+   Barra de confirmação do lote
+   ========================================================================== */
+
+/* Grade, e não flex: o campo da matéria tem rótulo em cima, e num flex com
+   `space-between` ele empurrava o resto da linha para fora do eixo. */
+.barra-importar {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: end;
+  gap: var(--esp-4);
+  padding: var(--esp-3) var(--esp-4);
+  border: var(--borda);
+  background: var(--cor-superficie);
+}
+
+.barra-importar > .rotulo { padding-bottom: var(--esp-2); }
+
+.barra-importar .campo { min-width: 220px; }
+
+@media (max-width: 760px) {
+  .barra-importar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .barra-importar > .rotulo { padding-bottom: 0; }
+}
+
+/* Nome de arquivo não é rótulo: caixa-alta e espaçamento de letra deixam
+   "SCREENSHOT 2026-10-02 AT 11.09.48 AM.PNG" ocupando meia faixa. */
+.questao-id-arquivo {
+  text-transform: none;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 34ch;
+}
+
+.linha-alternativa {
+  flex-wrap: nowrap;
+  gap: var(--esp-2);
+}
+
+.linha-alternativa input { flex: 1; min-width: 0; }
+
+/* Afordância do gabarito na revisão: a linha inteira já era clicável, mas
+   nada dizia isso. O rótulo aparece de leve e firma quando é a escolhida. */
+.alternativa-marcavel { align-items: center; }
+
+.marcar {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+  margin-left: auto;
+  padding-left: var(--esp-3);
+  flex: 0 0 auto;
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.alternativa-marcavel:hover .marcar,
+.alternativa-marcavel:focus-visible .marcar { opacity: 1; }
+
+.marcar-feito {
+  opacity: 1;
+  color: var(--cor-positivo);
+}
+
+@media (hover: none) {
+  .marcar { opacity: 1; }
+}
+
+/* A letra da alternativa vira botão no cadastro: marcar o gabarito é onde a
+   mão já está, e não num seletor separado no fim do formulário. */
+.letra-botao {
+  padding: 0;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+
+.letra-botao:hover:not(:disabled) {
+  background: var(--cor-positivo-fraco);
+  border-color: var(--cor-positivo);
+}
+
+.letra-botao:disabled { cursor: default; opacity: 0.5; }
+
+.letra-certa {
+  background: var(--cor-positivo);
+  border-color: var(--cor-positivo);
+  color: #fff;
+}
+
+.letra-certa:hover:not(:disabled) {
+  background: var(--cor-positivo);
+  color: #fff;
+}
+
+/* Prints da questão dentro do cadastro, logo acima dos campos lidos. */
+.painel-print {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  border: var(--borda-suave);
+  background: var(--cor-superficie);
+}
+
+/* ==========================================================================
+   Notas do dia e tarefas
+   ========================================================================== */
+
+.tarefas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: var(--borda-suave);
+}
+
+.tarefa {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  padding: var(--esp-2) 0;
+  border-bottom: var(--borda-suave);
+  font-size: var(--texto-p);
+}
+
+/* O checkbox tem 17px e a linha do texto, 1.45: sem isto ele fica alto. */
+.tarefa > input[type='checkbox'] { margin-top: 3px; }
+
+.tarefa-texto {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tarefa-feita .tarefa-texto {
+  color: var(--cor-texto-fraco);
+  text-decoration: line-through;
+}
+
+.tarefa > .tag { margin-top: 2px; }
+
+/* A lixeira só aparece ao passar o mouse: a lista é para ler, não para mexer. */
+.tarefa > .botao-perigo {
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.tarefa:hover > .botao-perigo,
+.tarefa > .botao-perigo:focus-visible { opacity: 1; }
+
+@media (hover: none) {
+  .tarefa > .botao-perigo { opacity: 1; }
+}
+
+.nota-estado {
+  font-size: var(--texto-ppp);
+  font-weight: var(--peso-forte);
+  letter-spacing: var(--entreletras-rotulo);
+  text-transform: uppercase;
+  color: var(--cor-texto-fraco);
+}
+
+.nota-data { width: auto; }
+
+.nota-editor {
+  min-height: 180px;
+  font-size: var(--texto-m);
+}
+
+.nota-tarefas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
+.nota-nova {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+}
+
+.nota-nova > textarea { min-height: 0; }
+.nota-nova > .botao { flex: 0 0 auto; }
+
+@media (max-width: 560px) {
+  .nota-nova { flex-direction: column; align-items: stretch; }
+}
+
+.nota-historico {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.nota-dia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  padding-top: var(--esp-3);
+  border-top: var(--borda);
+}
+
+.nota-dia > .secao-titulo > h3 { font-size: var(--texto-m); }
+
+/* O texto foi escrito com as quebras de linha que tem: elas são o conteúdo. */
+.nota-texto {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--texto-p);
+}

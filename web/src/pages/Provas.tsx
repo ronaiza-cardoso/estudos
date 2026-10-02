@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { Dices, Flag, Play, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Brain, Dices, Flag, Play, Target, Trash2 } from 'lucide-react';
 import {
   api,
   type Materia,
   type ProvaCompleta,
   type ProvaResumo,
+  type ResumoRevisao,
 } from '../lib/api';
 import { dataCompleta, hhmmss, minutosHumanos } from '../lib/format';
 import { QuestaoCard } from '../components/QuestaoCard';
@@ -68,6 +69,8 @@ export function Provas({ materias, aoAtualizar }: Props) {
       </div>
 
       {erro && <div className="aviso aviso-erro">{erro}</div>}
+
+      <PainelRevisao materias={materias} aoCriar={recarregar} />
 
       <section className="painel">
         <div className="painel-cabecalho">
@@ -391,5 +394,186 @@ function ResolverProva({ prova, aoSair }: { prova: ProvaCompleta; aoSair: () => 
         ))}
       </div>
     </>
+  );
+}
+
+
+/* ====================================================================== */
+
+/**
+ * Repetição espaçada.
+ *
+ * Duas filas, com propósitos diferentes. A da sessão devolve o que venceu hoje
+ * — e o que você errou na última vez vence no mesmo dia, então erro volta
+ * rápido e continua voltando até você acertar algumas vezes seguidas. A de fim
+ * de semana ignora vencimento e junta só o que você errou na janela, do que
+ * mais errou para o que menos errou.
+ */
+function PainelRevisao({
+  materias,
+  aoCriar,
+}: {
+  materias: Materia[];
+  aoCriar: () => void;
+}) {
+  const [resumo, setResumo] = useState<ResumoRevisao | null>(null);
+  const [materiaId, setMateriaId] = useState('');
+  const [quantidade, setQuantidade] = useState('20');
+  const [dias, setDias] = useState('7');
+  const [erro, setErro] = useState('');
+  const [gerando, setGerando] = useState<'revisao' | 'erros' | null>(null);
+
+  const carregar = useCallback(() => {
+    api
+      .revisao({ materia_id: materiaId ? Number(materiaId) : null, dias: Number(dias) || 7 })
+      .then(setResumo)
+      .catch(() => setResumo(null));
+  }, [materiaId, dias]);
+
+  useEffect(carregar, [carregar]);
+
+  async function gerar(tipo: 'revisao' | 'erros') {
+    setGerando(tipo);
+    setErro('');
+    try {
+      const comum = {
+        materia_id: materiaId ? Number(materiaId) : null,
+        quantidade: Number(quantidade) || 20,
+      };
+      if (tipo === 'revisao') await api.provaRevisao(comum);
+      else await api.provaErros({ ...comum, dias: Number(dias) || 7 });
+      aoCriar();
+      carregar();
+    } catch (e) {
+      setErro((e as Error).message);
+    } finally {
+      setGerando(null);
+    }
+  }
+
+  const nivelMaximo = (resumo?.por_nivel.length ?? 1) - 1;
+
+  return (
+    <section className="painel">
+      <div className="painel-cabecalho">
+        <span className="rotulo">Revisão espaçada</span>
+        {resumo && (
+          <span className="rotulo">
+            {resumo.total} questões respondíveis
+          </span>
+        )}
+      </div>
+
+      <div className="painel-corpo coluna">
+        {resumo && (
+          <div className="linha" style={{ gap: 'var(--esp-5)' }}>
+            <Metrica rotulo="Vencidas hoje" valor={resumo.vencidas} />
+            <Metrica rotulo="Errei na última" valor={resumo.errei_na_ultima} acento />
+            <Metrica rotulo="Marquei para hoje" valor={resumo.agendadas_hoje} />
+            <Metrica rotulo="Guardadas p/ depois" valor={resumo.agendadas_depois} />
+            <Metrica rotulo="Nunca respondidas" valor={resumo.nunca_respondidas} />
+            <Metrica
+              rotulo={`Erradas em ${dias} dias`}
+              valor={resumo.com_erro_no_periodo}
+              acento
+            />
+          </div>
+        )}
+
+        <div className="filtros filtros-compactos">
+          <Campo rotulo="Matéria">
+            <select value={materiaId} onChange={(e) => setMateriaId(e.target.value)}>
+              <option value="">Todas as matérias</option>
+              {materias.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nome}
+                </option>
+              ))}
+            </select>
+          </Campo>
+          <Campo rotulo="Questões no caderno">
+            <input
+              inputMode="numeric"
+              value={quantidade}
+              onChange={(e) => setQuantidade(e.target.value.replace(/\D/g, '').slice(0, 3))}
+            />
+          </Campo>
+          <Campo rotulo="Janela de erros (dias)">
+            <input
+              inputMode="numeric"
+              value={dias}
+              onChange={(e) => setDias(e.target.value.replace(/\D/g, '').slice(0, 3))}
+            />
+          </Campo>
+        </div>
+
+        <div className="linha">
+          <button
+            className="botao botao-primario"
+            onClick={() => gerar('revisao')}
+            disabled={gerando !== null || resumo?.total === 0}
+          >
+            <Brain size={15} />
+            {gerando === 'revisao' ? 'Montando…' : 'Caderno da sessão de hoje'}
+          </button>
+          <button
+            className="botao"
+            onClick={() => gerar('erros')}
+            disabled={gerando !== null || resumo?.com_erro_no_periodo === 0}
+          >
+            <Target size={15} />
+            {gerando === 'erros' ? 'Montando…' : 'Caderno das que mais errei'}
+          </button>
+        </div>
+
+        {resumo && resumo.total > 0 && (
+          <div className="niveis">
+            {resumo.por_nivel.map((n) => (
+              <div className="nivel" key={n.nivel}>
+                <span className="rotulo">
+                  {n.nivel === 0 ? 'errei' : `nível ${n.nivel}`}
+                </span>
+                <span className={`numero ${n.nivel === 0 ? 'vermelho' : ''}`}>{n.questoes}</span>
+                <span className="rotulo">
+                  {n.intervalo_dias === 0
+                    ? 'volta já'
+                    : `${n.intervalo_dias}d${n.nivel === nivelMaximo ? '+' : ''}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <span className="dica">
+          Errar zera o nível e a questão volta na próxima sessão. Cada acerto seguido empurra
+          o próximo encontro para mais longe. O que você marcou com "responder amanhã" fica
+          fora da fila até o dia, e nesse dia vem na frente de tudo.
+        </span>
+
+        {erro && <Aviso erro>{erro}</Aviso>}
+      </div>
+    </section>
+  );
+}
+
+function Metrica({
+  rotulo,
+  valor,
+  acento,
+}: {
+  rotulo: string;
+  valor: number;
+  acento?: boolean;
+}) {
+  return (
+    <div className="coluna" style={{ gap: 0 }}>
+      <span className="rotulo">{rotulo}</span>
+      <span
+        className={`numero ${acento && valor > 0 ? 'vermelho' : ''}`}
+        style={{ fontSize: 'var(--texto-g)' }}
+      >
+        {valor}
+      </span>
+    </div>
   );
 }
